@@ -1,7 +1,7 @@
 """
 CTKG Construction Agent
 
-A modular agent (controller: GPT-4o) that converts ClinicalTrials.gov records 
+A modular agent (controller: GPT-5) that converts ClinicalTrials.gov records 
 into structured Clinical Trial Knowledge Graphs (CTKGs).
 
 The agent can process:
@@ -175,7 +175,7 @@ class CTKGConstructionAgent:
         self,
         llm_client=None,
         api_key: Optional[str] = None,
-        model: str = "gpt-4o",
+        model: str = "gpt-5",
         cache_dir: Optional[Path] = None
     ):
         """
@@ -184,7 +184,7 @@ class CTKGConstructionAgent:
         Args:
             llm_client: Pre-configured LLM client (optional)
             api_key: API key for LLM service
-            model: Model name to use (default: gpt-4o)
+            model: Model name to use (default: gpt-5)
             cache_dir: Directory for caching intermediate results
         """
         self.llm_client = llm_client
@@ -555,7 +555,7 @@ class CTKGConstructionAgent:
 
 def create_agent(
     api_key: Optional[str] = None,
-    model: str = "gpt-4o"
+    model: str = "gpt-5"
 ) -> CTKGConstructionAgent:
     """
     Create a CTKG Construction Agent with default configuration.

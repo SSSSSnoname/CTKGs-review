@@ -4,7 +4,7 @@ A modular AI agent that converts ClinicalTrials.gov records into structured Clin
 
 ## Overview
 
-The CTKG Construction Agent is designed to automatically extract, standardize, and structure clinical trial information from ClinicalTrials.gov into knowledge graph triples. It uses GPT-4o as the controller to orchestrate 9 modular tasks.
+The CTKG Construction Agent is designed to automatically extract, standardize, and structure clinical trial information from ClinicalTrials.gov into knowledge graph triples. It uses GPT-5 as the controller to orchestrate 9 modular tasks.
 
 ## Architecture
 
@@ -152,7 +152,7 @@ Focus on protocol changes over time:
 
 ```python
 class CTKGConstructionAgent:
-    def __init__(self, llm_client=None, api_key=None, model="gpt-4o", cache_dir=None):
+    def __init__(self, llm_client=None, api_key=None, model="gpt-5", cache_dir=None):
         """Initialize the CTKG Construction Agent."""
     
     def load_trial_from_api(self, nct_id: str) -> TrialData:
@@ -202,9 +202,8 @@ export OPENAI_API_KEY="your-api-key"
 
 ### Model Options
 
-- `gpt-4o` (default) - Best quality
-- `gpt-4-turbo` - Faster, slightly lower quality
-- `gpt-3.5-turbo` - Fastest, lower quality
+- `gpt-5` (default) - Best quality
+- `gpt-5-mini` - Faster, slightly lower quality
 
 ## Notes
 
