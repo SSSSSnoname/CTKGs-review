@@ -234,8 +234,13 @@ class Task2InterventionProfiling(BaseTaskHandler):
                     # Parse response
                     parsed = parse_intervention_response(response)
                     
+                    normalized_group_id = self._normalize_group_id(
+                        group_input.get('group_id'),
+                        nct_id=trial_data.nct_id
+                    )
                     profiled_interventions.append({
-                        'group_id': group_input.get('group_id'),
+                        'group_id': normalized_group_id,
+                        'original_group_id': group_input.get('group_id'),
                         'group_title': group_input.get('title'),
                         'original_description': group_input.get('description'),
                         'interventions': parsed.get('Interventions', []),
@@ -247,7 +252,7 @@ class Task2InterventionProfiling(BaseTaskHandler):
                     errors.append(f"{group_input.get('group_id')}: {str(e)}")
             
             # Build co-treat and composite relations
-            relations = self._build_relations(profiled_interventions)
+            relations = self._build_relations(profiled_interventions, trial_data.nct_id)
             
             if errors and not profiled_interventions:
                 return self._create_error_result(errors)
@@ -288,8 +293,13 @@ class Task2InterventionProfiling(BaseTaskHandler):
                 response = self.call_llm(prompt)
                 parsed = parse_intervention_response(response)
                 
+                normalized_group_id = self._normalize_group_id(
+                    arm_input.get('group_id'),
+                    nct_id=trial_data.nct_id
+                )
                 profiled_interventions.append({
-                    'group_id': arm_input.get('group_id'),
+                    'group_id': normalized_group_id,
+                    'original_group_id': arm_input.get('group_id'),
                     'group_title': arm_input.get('title'),
                     'original_description': arm_input.get('description'),
                     'interventions': parsed.get('Interventions', []),
@@ -299,7 +309,7 @@ class Task2InterventionProfiling(BaseTaskHandler):
                 logger.error(f"Failed to process arm {arm_input.get('group_id')}: {e}")
                 errors.append(str(e))
         
-        relations = self._build_relations(profiled_interventions)
+        relations = self._build_relations(profiled_interventions, trial_data.nct_id)
         
         return self._create_success_result({
             'profiled_interventions': profiled_interventions,
@@ -425,11 +435,12 @@ class Task2InterventionProfiling(BaseTaskHandler):
         
         return arm_groups
     
-    def _normalize_group_id(self, group_id: str) -> str:
+    def _normalize_group_id(self, group_id: str, nct_id: str = "") -> str:
         """
         Normalize group ID to unified format.
         
-        BG000, OG000, EG000, AG000 -> Group_000
+        BG000, OG000, EG000, AG000 -> NCTID_000 (if nct_id is provided)
+        BG000, OG000, EG000, AG000 -> Group_000 (fallback)
         
         Args:
             group_id: Original group ID
@@ -446,11 +457,13 @@ class Task2InterventionProfiling(BaseTaskHandler):
         match = re.match(r'[A-Z]{1,2}(\d+)', group_id)
         if match:
             num = match.group(1)
+            if nct_id:
+                return f"{nct_id}_{num}"
             return f"Group_{num}"
         
         return group_id
     
-    def _build_relations(self, profiled_interventions: List[Dict]) -> Dict[str, List]:
+    def _build_relations(self, profiled_interventions: List[Dict], nct_id: str = "") -> Dict[str, List]:
         """
         Build co-treat and composite relations from profiled interventions.
         
@@ -467,12 +480,28 @@ class Task2InterventionProfiling(BaseTaskHandler):
             interventions = arm.get('interventions', [])
             group_id = arm.get('group_id', '')
             # Normalize group ID: OG000 -> Group_000
-            normalized_group = self._normalize_group_id(group_id)
+            normalized_group = self._normalize_group_id(group_id, nct_id=nct_id)
             group_title = arm.get('group_title', '')
             sequence = arm.get('administration_sequence', 'no order')
             
             if len(interventions) == 0:
                 continue
+
+            def _entity_attrs(intervention_obj: Dict) -> Dict:
+                raw_intervention_id = str(intervention_obj.get('id', '') or '').strip()
+                normalized_intervention_id = (
+                    f"{normalized_group}_{raw_intervention_id}"
+                    if raw_intervention_id else None
+                )
+                return {
+                    'type': intervention_obj.get('type'),
+                    'dosage_form': intervention_obj.get('dosage_form'),
+                    'administration_route': intervention_obj.get('administration_route'),
+                    'dosage': intervention_obj.get('dosage'),
+                    'frequency': intervention_obj.get('frequency'),
+                    'Treatment duration': intervention_obj.get('Treatment duration'),
+                    'id': normalized_intervention_id
+                }
             
             # Build composite relations: each drug belongs to this group
             for intervention in interventions:
@@ -482,9 +511,11 @@ class Task2InterventionProfiling(BaseTaskHandler):
                     'tail': normalized_group,
                     'head_type': 'Drug',
                     'tail_type': 'Group',
-                    'attributes': {
+                    'head_attributes': _entity_attrs(intervention),
+                    'tail_attributes': {
+                        'group_id': normalized_group,
                         'group_title': group_title,
-                        'sequence': sequence if sequence != 'no order' else None
+                        'administration_sequence': sequence
                     }
                 })
             
@@ -500,9 +531,12 @@ class Task2InterventionProfiling(BaseTaskHandler):
                                 'tail': int2.get('name'),
                                 'head_type': 'Drug',
                                 'tail_type': 'Drug',
-                                'attributes': {
+                                'head_attributes': _entity_attrs(int1),
+                                'tail_attributes': _entity_attrs(int2),
+                                'relation_attributes': {
                                     'group_id': normalized_group,
-                                    'group_title': group_title
+                                    'group_title': group_title,
+                                    'administration_sequence': sequence
                                 }
                             })
                 else:
@@ -515,10 +549,12 @@ class Task2InterventionProfiling(BaseTaskHandler):
                                 'tail': int2.get('name'),
                                 'head_type': 'Drug',
                                 'tail_type': 'Drug',
-                                'attributes': {
+                                'head_attributes': _entity_attrs(int1),
+                                'tail_attributes': _entity_attrs(int2),
+                                'relation_attributes': {
                                     'group_id': normalized_group,
                                     'group_title': group_title,
-                                    'sequence': sequence
+                                    'administration_sequence': sequence
                                 }
                             })
         

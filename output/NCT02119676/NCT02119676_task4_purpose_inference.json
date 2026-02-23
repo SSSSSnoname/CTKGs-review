@@ -1,0 +1,79 @@
+{
+  "task_type": "task4_purpose_inference",
+  "success": true,
+  "data": {
+    "inferred_purpose": {
+      "answer": "yes",
+      "reason": "The trial tests ruxolitinib in combination with regorafenib (versus placebo with regorafenib) to evaluate safety and efficacy for treating relapsed or refractory metastatic colorectal cancer.",
+      "head_entity_1": "Ruxolitinib plus Regorafenib",
+      "head_entity_2": "Placebo plus Regorafenib",
+      "head_entity_3": "Regorafenib",
+      "purpose": "treat",
+      "tail_entity": [
+        "relapsed or refractory metastatic colorectal cancer"
+      ],
+      "head_entities": [
+        "Ruxolitinib plus Regorafenib",
+        "Placebo plus Regorafenib",
+        "Regorafenib"
+      ],
+      "original_purpose": "TREATMENT",
+      "nct_id": "NCT02119676",
+      "kg_triples": [
+        {
+          "head": "Ruxolitinib plus Regorafenib",
+          "relation": "treat",
+          "tail": "relapsed or refractory metastatic colorectal cancer",
+          "head_type": "Intervention",
+          "tail_type": "Disease/Symptom/Endpoint",
+          "provenance": {
+            "nct_id": "NCT02119676"
+          }
+        },
+        {
+          "head": "Placebo plus Regorafenib",
+          "relation": "treat",
+          "tail": "relapsed or refractory metastatic colorectal cancer",
+          "head_type": "Intervention",
+          "tail_type": "Disease/Symptom/Endpoint",
+          "provenance": {
+            "nct_id": "NCT02119676"
+          }
+        },
+        {
+          "head": "Regorafenib",
+          "relation": "treat",
+          "tail": "relapsed or refractory metastatic colorectal cancer",
+          "head_type": "Intervention",
+          "tail_type": "Disease/Symptom/Endpoint",
+          "provenance": {
+            "nct_id": "NCT02119676"
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "studies_intervention",
+          "tail": "Ruxolitinib plus Regorafenib",
+          "head_type": "Trial",
+          "tail_type": "Intervention"
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "studies_intervention",
+          "tail": "Placebo plus Regorafenib",
+          "head_type": "Trial",
+          "tail_type": "Intervention"
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "studies_intervention",
+          "tail": "Regorafenib",
+          "head_type": "Trial",
+          "tail_type": "Intervention"
+        }
+      ]
+    }
+  },
+  "errors": [],
+  "metadata": {}
+}

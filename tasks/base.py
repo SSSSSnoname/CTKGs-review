@@ -34,7 +34,7 @@ class BaseTaskHandler(ABC):
         self,
         llm_client=None,
         api_key: Optional[str] = None,
-        model: str = "gpt-5"
+        model: str = "gpt-5-mini"
     ):
         """
         Initialize the task handler.
@@ -140,4 +140,3 @@ class BaseTaskHandler(ABC):
             data=partial_data or {},
             errors=errors
         )
-

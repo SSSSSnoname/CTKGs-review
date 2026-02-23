@@ -1,0 +1,103 @@
+{
+  "task_type": "task1_outcome_standardization",
+  "success": true,
+  "data": {
+    "standardized_outcomes": [
+      {
+        "original_title": "Overall Survival (OS)",
+        "core_measurement": "Overall Survival",
+        "attributes": {
+          "paramType": "MEDIAN",
+          "timeFrame": "Baseline until death due to any cause; up to 16 months or data cut-off 11 FEB 2016.",
+          "unitOfMeasure": "months",
+          "units": "months",
+          "description": "Overall survival is defined as the time from randomization to death due to any cause. Participants without death observed at the time of the analysis will be censored at last date known to be alive. The median overall survival time was estimated using the Kaplan-Meier method. Overall survival was compared between treatment groups using log-rank test.",
+          "outcome_type": "PRIMARY",
+          "measurement_tool": "Not Applicable",
+          "value_condition": "Not Applicable",
+          "conditional_population": "Not Applicable"
+        }
+      },
+      {
+        "original_title": "Progression Free Survival (PFS)",
+        "core_measurement": "Progression Free Survival",
+        "attributes": {
+          "paramType": "MEDIAN",
+          "timeFrame": "Baseline through disease progression, or death due to any cause if sooner; up to 16 months or data cut-off 11 FEB 2016.",
+          "unitOfMeasure": "months",
+          "units": "months",
+          "description": "Progressive Disease (PD) is defined using Response Evaluation Criteria in Solid Tumors (RECIST) v1.1 at least a 20% increase in the sum of the Longest Diameter (LD) of target lesions, taking as reference the smallest sum LD recorded since the treatment started or the appearance of one or more new lesions, unequivocal progression of non-target lesions, or the appearance of new lesions.",
+          "outcome_type": "SECONDARY",
+          "measurement_tool": "Not Applicable",
+          "value_condition": "Not Applicable",
+          "conditional_population": "Not Applicable"
+        }
+      },
+      {
+        "original_title": "Overall Response Rate (ORR)",
+        "core_measurement": "Overall Response Rate",
+        "attributes": {
+          "paramType": "NUMBER",
+          "timeFrame": "Baseline through end of study; up to 16 months or data cut-off 11 FEB 2016.",
+          "unitOfMeasure": "percentage of responders",
+          "units": "percentage of responders",
+          "description": "Response defined per Response Evaluation Criteria In Solid Tumors (RECIST) criteria: Complete Response (CR)=disappearance of all target and non-target lesions without new lesion; Partial Response (PR)=30% decrease in sum of longest diameter of target lesions, non-target lesion not progressed, and no new lesion; Progressive Disease=20% increase in sum of longest diameter of target lesions, or non-target lesion progression, or identification of new lesion; Stable Disease=small changes that do not meet above criteria. ORR was defined as the proportion of participants who achieved a best response of either CR or PR. ORR=number of participants with CR or PR/number of participants randomized.",
+          "outcome_type": "SECONDARY",
+          "measurement_tool": "Not Applicable",
+          "value_condition": "Not Applicable",
+          "conditional_population": "Not Applicable"
+        }
+      },
+      {
+        "original_title": "Duration of Response",
+        "core_measurement": "duration of response",
+        "attributes": {
+          "paramType": null,
+          "timeFrame": "Baseline through end of study; up to 16 months or data cut-off 11 FEB 2016.",
+          "unitOfMeasure": null,
+          "units": null,
+          "description": "Duration of response is defined as the time from response (CR/PR) until the earliest date of disease progression determined by investigator assessment of objective radiographic disease assessments per Response Evaluation Criteria in Solid Tumors (RECIST) v1.1, or death due to any cause.",
+          "outcome_type": "SECONDARY",
+          "measurement_tool": "Not Applicable",
+          "value_condition": "Not Applicable",
+          "conditional_population": "Not Applicable"
+        }
+      },
+      {
+        "original_title": "Percentage of Participants Achieving Disease Control",
+        "core_measurement": "disease control",
+        "attributes": {
+          "paramType": "NUMBER",
+          "timeFrame": "Baseline through end of study; up to 16 months or data cut-off 11 FEB 2016.",
+          "unitOfMeasure": "percentage of participants",
+          "units": "percentage of participants",
+          "description": "Disease control as measured by the percentage of participants whose best response was complete response (CR), partial response (PR), or stable disease (SD) per RECIST v.1.1.",
+          "outcome_type": "SECONDARY",
+          "measurement_tool": "Not Applicable",
+          "value_condition": "Not Applicable",
+          "conditional_population": "Not Applicable"
+        }
+      },
+      {
+        "original_title": "Percentage of Participants With Treatment-emergent Adverse Events (TEAEs)",
+        "core_measurement": "treatment-emergent adverse event",
+        "attributes": {
+          "paramType": "NUMBER",
+          "timeFrame": "Baseline through approximately 30 days post treatment discontinuation;up to 16 months or data cut-off 27JAN 2016 for Substudy 1 and up to the data cut-off of 11FEB2016 for Substudy 2.",
+          "unitOfMeasure": "percentage of participants",
+          "units": "percentage of participants",
+          "description": "TEAEs were defined as any adverse event (AE) during the study that began or worsened on or after the date of first dose of investigational product.",
+          "outcome_type": "SECONDARY",
+          "measurement_tool": "Not Applicable",
+          "value_condition": "Not Applicable",
+          "conditional_population": "Not Applicable"
+        }
+      }
+    ],
+    "total_outcomes": 6,
+    "processed_outcomes": 6,
+    "errors": []
+  },
+  "errors": [],
+  "metadata": {}
+}

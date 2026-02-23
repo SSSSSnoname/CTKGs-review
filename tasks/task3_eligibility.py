@@ -11,9 +11,10 @@ Parses eligibility criteria into structured filters using entity-level extractio
 Outputs standardized entities suitable for knowledge graph construction.
 """
 
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 import json
 import logging
+import re
 
 from .base import BaseTaskHandler, TaskResult
 
@@ -52,6 +53,12 @@ Summarize the inclusion and exclusion criteria of the following clinical trial u
 - Do NOT use abbreviations unless they are the standard form
 - If there is no relevant information for a category, output "unknown" or empty list
 - Separate inclusion and exclusion criteria clearly
+- For `entity_qualifiers`, `core_entity` MUST be pure concept only:
+  - Do NOT include thresholds, numbers, units, time windows, grades, or conditional clauses in `core_entity`
+  - Put all constraints in `qualifiers.numeric_constraint`, `qualifiers.temporal`, `qualifiers.severity_grade`, `qualifiers.conditional_clause`
+  - `core_entity` and qualifier values must not overlap semantically
+  - If text is assigned to `qualifiers.conditional_clause`, that same text MUST NOT appear in `core_entity`
+  - Remove trailing condition tails from `core_entity`, especially phrases starting with `with`, `without`, `if`, `unless`, `when`, `where`
 
 # Input Eligibility Criteria
 {eligibility_text}
@@ -62,27 +69,37 @@ ELIGIBILITY_PROMPT_PART2 = """
 Generate a valid JSON object in the following structure:
 
 {{
-  "Inclusion": {{
-    "Medical conditions": ["disease 1", "disease 2", ...],
-    "Pregnancy": "Yes" | "No" | "Unknown",
-    "Medications or therapy": ["drug/therapy 1", "drug/therapy 2", ...],
-    "Laboratory values": ["lab criteria 1", "lab criteria 2", ...],
-    "Demographics": {{
-      "age_min": "minimum age or null",
-      "age_max": "maximum age or null", 
-      "sex": "male/female/all or null"
-    }},
-    "Other": ["other criteria 1", ...]
-  }},
-  "Exclusion": {{
-    "Medical conditions": ["disease 1", "disease 2", ...],
-    "Pregnancy": "Yes" | "No" | "Unknown",
-    "Medications or therapy": ["drug/therapy 1", "drug/therapy 2", ...],
-    "Laboratory values": ["lab criteria 1", ...],
-    "Demographics": {{}},
-    "Other": ["other exclusion criteria 1", ...]
-  }},
-  "Summary": "Brief one-sentence summary of the target population"
+  "entity_qualifiers": [
+    {{
+      "section": "Inclusion" | "Exclusion",
+      "slot": "Medical conditions" | "Medications or therapy" | "Laboratory values" | "Other" | "Pregnancy" | "Demographics",
+      "original_text": "exact text span",
+      "core_entity": "normalized core entity without qualifiers (no numbers, no operators, no units, no time window, no condition, and no overlap with conditional_clause)",
+      "qualifiers": {{
+        "polarity": "include" | "exclude" | "required" | "prohibited" | "allowed" | "unknown",
+        "entity_type": "disease" | "therapy" | "biomarker" | "vital_sign" | "functional_status" | "procedure" | "other",
+        "status": "active" | "prior" | "recent" | "ongoing" | "unstable" | "corrected" | "uncontrolled" | "recurrent" | "unknown",
+        "temporal": {{
+          "window_value": 0,
+          "window_unit": "day|days|week|weeks|month|months|year|years",
+          "window_direction": "within_last|since|before|after"
+        }} | null,
+        "numeric_constraint": {{
+          "operator": "<|<=|>|>=|=|range",
+          "value": "number or ratio",
+          "unit": "unit"
+        }} | null,
+        "severity_grade": "e.g., ECOG 0-2, NYHA Class II-IV" | null,
+        "prior_treatment": {{
+          "required": true | false,
+          "prohibited": true | false,
+          "line_or_regimen": "text or null"
+        }} | null,
+        "conditional_clause": "if ... clause or null",
+        "evidence_or_rule_source": "e.g., RECIST v1.1, CTCAE v5.0, ECOG" | null
+      }}
+    }}
+  }}
 }}
 
 Return ONLY the JSON object, no additional text.
@@ -137,9 +154,10 @@ class Task3EligibilityStructuring(BaseTaskHandler):
             
             # Parse response
             structured = self._parse_response(response)
-            
-            # Validate and normalize the structure
-            structured = self._normalize_structure(structured)
+
+            # Keep a minimal output schema centered on entity_qualifiers.
+            if not isinstance(structured, dict):
+                structured = {}
             
             # Add metadata from registry fields
             structured['metadata'] = {
@@ -153,6 +171,11 @@ class Task3EligibilityStructuring(BaseTaskHandler):
             # Add baseline characteristics if available
             if inputs.get('baseline_characteristics'):
                 structured['baseline_characteristics'] = inputs['baseline_characteristics']
+
+            # Normalize entity_qualifiers returned by the same LLM response.
+            structured['entity_qualifiers'] = self._normalize_entity_qualifiers(
+                structured.get('entity_qualifiers')
+            )
             
             # Generate knowledge graph triples from structured data
             structured['kg_triples'] = self._generate_kg_triples(
@@ -176,116 +199,205 @@ class Task3EligibilityStructuring(BaseTaskHandler):
     
     def _get_empty_structure(self) -> Dict:
         """Return empty structure with proper schema."""
-        return {
-            "Inclusion": {
-                "Medical conditions": [],
-                "Pregnancy": "Unknown",
-                "Medications or therapy": [],
-                "Laboratory values": [],
-                "Demographics": {},
-                "Other": []
-            },
-            "Exclusion": {
-                "Medical conditions": [],
-                "Pregnancy": "Unknown",
-                "Medications or therapy": [],
-                "Laboratory values": [],
-                "Demographics": {},
-                "Other": []
-            },
-            "Summary": "No eligibility criteria available"
-        }
+        return {"entity_qualifiers": []}
     
-    def _normalize_structure(self, structured: Dict) -> Dict:
-        """Normalize and validate the parsed structure."""
-        # Ensure proper structure exists
-        for section in ['Inclusion', 'Exclusion']:
-            if section not in structured:
-                structured[section] = {}
-            
-            # Ensure all required fields exist
-            defaults = {
-                "Medical conditions": [],
-                "Pregnancy": "Unknown",
-                "Medications or therapy": [],
-                "Laboratory values": [],
-                "Demographics": {},
-                "Other": []
+    def _normalize_entity_qualifiers(self, entity_qualifiers: Any) -> List[Dict]:
+        """Validate/normalize entity_qualifiers shape returned by LLM."""
+        if not isinstance(entity_qualifiers, list):
+            return []
+
+        normalized: List[Dict] = []
+        for item in entity_qualifiers:
+            if not isinstance(item, dict):
+                continue
+            qualifiers = item.get('qualifiers')
+            if not isinstance(qualifiers, dict):
+                qualifiers = {}
+
+            normalized_item = {
+                'section': item.get('section'),
+                'slot': item.get('slot'),
+                'original_text': item.get('original_text'),
+                'core_entity': item.get('core_entity'),
+                'qualifiers': {
+                    'polarity': qualifiers.get('polarity', 'unknown'),
+                    'entity_type': qualifiers.get('entity_type', 'other'),
+                    'status': qualifiers.get('status', 'unknown'),
+                    'temporal': qualifiers.get('temporal'),
+                    'numeric_constraint': qualifiers.get('numeric_constraint'),
+                    'severity_grade': qualifiers.get('severity_grade'),
+                    'prior_treatment': qualifiers.get('prior_treatment'),
+                    'conditional_clause': qualifiers.get('conditional_clause'),
+                    'evidence_or_rule_source': qualifiers.get('evidence_or_rule_source'),
+                }
             }
-            
-            for key, default in defaults.items():
-                if key not in structured[section]:
-                    structured[section][key] = default
-                # Normalize "unknown" strings in lists
-                if isinstance(structured[section][key], list):
-                    structured[section][key] = [
-                        item for item in structured[section][key]
-                        if item and item.lower() != "unknown"
-                    ]
-            
-            # Validate Pregnancy field
-            pregnancy = structured[section].get("Pregnancy", "Unknown")
-            if pregnancy not in ["Yes", "No", "Unknown"]:
-                structured[section]["Pregnancy"] = "Unknown"
-        
-        return structured
+
+            # Enforce non-overlap: strip numeric/time/condition tokens from core_entity.
+            normalized_item['core_entity'] = self._strip_core_entity_overlap(
+                normalized_item.get('core_entity'),
+                normalized_item['qualifiers']
+            )
+            normalized.append(normalized_item)
+        return normalized
+
+    def _strip_core_entity_overlap(self, core_entity: Any, qualifiers: Dict) -> Optional[str]:
+        """Remove qualifier-like fragments from core_entity to keep concept/qualifier separation."""
+        if not isinstance(core_entity, str):
+            return core_entity
+        text = core_entity.strip()
+        if not text:
+            return text
+
+        # Remove numeric/operator/unit patterns (e.g., >= 12 weeks, <140/90 mmHg).
+        text = re.sub(r'(<=|>=|<|>|≤|≥|=)\s*\d+(?:\.\d+)?(?:/\d+(?:\.\d+)?)?\s*[a-zA-Z%/]*', '', text)
+        text = re.sub(r'\b\d+(?:\.\d+)?\s*(day|days|week|weeks|month|months|year|years|mmhg|kg|g|mg|ml|l)\b', '', text, flags=re.IGNORECASE)
+
+        # Remove common qualifier markers.
+        text = re.sub(r'\bif\b.*$', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'\b(within|since|before|after)\b.*$', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'\b(ECOG|NYHA|RECIST|CTCAE)\b.*$', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'\b(with|without|unless|when|where)\b.*$', '', text, flags=re.IGNORECASE)
+
+        # Remove exact conditional clause overlap if provided.
+        cond = qualifiers.get('conditional_clause') if isinstance(qualifiers, dict) else None
+        if isinstance(cond, str) and cond.strip():
+            cond_clean = cond.strip().strip(" ,;.-[]()")
+            if cond_clean:
+                text = re.sub(re.escape(cond_clean), '', text, flags=re.IGNORECASE)
+
+        # Clean residual punctuation/whitespace.
+        text = re.sub(r'\s+', ' ', text).strip(" ,;.-[]()")
+        return text or core_entity.strip()
     
     def _generate_kg_triples(self, nct_id: str, structured: Dict) -> List[Dict]:
         """Generate knowledge graph triples from structured eligibility."""
         triples = []
-        
-        # First, validate pregnancy logic
-        inclusion_pregnancy = structured.get('Inclusion', {}).get('Pregnancy', 'Unknown')
-        exclusion_pregnancy = structured.get('Exclusion', {}).get('Pregnancy', 'Unknown')
-        
-        # Check for logical conflict: both cannot be Yes or both cannot be No
-        # If conflict exists, set both to Unknown
-        pregnancy_conflict = False
-        if inclusion_pregnancy == exclusion_pregnancy and inclusion_pregnancy in ['Yes', 'No']:
-            pregnancy_conflict = True
-            # Both are Yes or both are No - this is logically impossible
-            # Set to Unknown
-            if 'Inclusion' in structured:
-                structured['Inclusion']['Pregnancy'] = 'Unknown'
-            if 'Exclusion' in structured:
-                structured['Exclusion']['Pregnancy'] = 'Unknown'
-        
-        for section in ['Inclusion', 'Exclusion']:
+
+        slot_relation_map = {
+            "Medical conditions": ("condition", "Disease"),
+            "Medications or therapy": ("medication", "Drug"),
+            "Laboratory values": ("lab_value", "LabCriterion"),
+            "Other": ("criterion", "EligibilityCriterion"),
+            "Pregnancy": ("pregnancy", "PregnancyStatus"),
+            "Demographics": ("demographic", "DemographicCriterion"),
+        }
+
+        for record in structured.get('entity_qualifiers', []) or []:
+            if not isinstance(record, dict):
+                continue
+            section = record.get('section')
+            slot = record.get('slot')
+            if section not in ("Inclusion", "Exclusion") or slot not in slot_relation_map:
+                continue
+
             relation_prefix = "includes" if section == "Inclusion" else "excludes"
-            section_data = structured.get(section, {})
-            
-            # Medical conditions
-            for condition in section_data.get("Medical conditions", []):
-                triples.append({
-                    'head': nct_id,
-                    'relation': f'{relation_prefix}_condition',
-                    'tail': condition,
-                    'head_type': 'Trial',
-                    'tail_type': 'Disease'
-                })
-            
-            # Medications or therapy
-            for med in section_data.get("Medications or therapy", []):
-                triples.append({
-                    'head': nct_id,
-                    'relation': f'{relation_prefix}_medication',
-                    'tail': med,
-                    'head_type': 'Trial',
-                    'tail_type': 'Drug'
-                })
-            
-            # Pregnancy - skip if Unknown or if there was a conflict
-            pregnancy = section_data.get("Pregnancy", "Unknown")
-            if pregnancy != "Unknown" and not pregnancy_conflict:
-                triples.append({
-                    'head': nct_id,
-                    'relation': f'{relation_prefix}_pregnancy',
-                    'tail': pregnancy,
-                    'head_type': 'Trial',
-                    'tail_type': 'PregnancyStatus'
-                })
+            relation_suffix, tail_type = slot_relation_map[slot]
+            tail = record.get('core_entity') or record.get('original_text')
+            if not tail or self._is_unknown_tail_value(tail):
+                continue
+
+            triples.append({
+                'head': nct_id,
+                'relation': f'{relation_prefix}_{relation_suffix}',
+                'tail': tail,
+                'head_type': 'Trial',
+                'tail_type': tail_type,
+                'tail_attributes': (record.get('qualifiers') if isinstance(record.get('qualifiers'), dict) else {})
+            })
+
+        # Baseline characteristics triples
+        # Rule:
+        # - head: NCTID + "_" + last 3 digits of groupId (e.g., NCT02119676_000)
+        # - relation: baseline_characteristics
+        # - tail: deepest category title (e.g., "American Indian or Alaska Native")
+        # - COUNT-type only included when value > 0
+        # - attributes: value, unit, param_type
+        baseline = structured.get('baseline_characteristics', [])
+        triples.extend(self._generate_baseline_triples(nct_id, baseline))
         
         return triples
+
+    def _is_unknown_tail_value(self, value: Any) -> bool:
+        """Return True for placeholder/empty tail values that should not form triples."""
+        if value is None:
+            return True
+        if not isinstance(value, str):
+            return False
+        v = value.strip().lower()
+        return v in {"", "unknown", "n/a", "na", "null", "none", "not applicable"}
+
+    def _generate_baseline_triples(self, nct_id: str, baseline_characteristics: List[Dict]) -> List[Dict]:
+        """Generate baseline characteristic triples based on nested baseline structure."""
+        triples = []
+
+        for measure in baseline_characteristics or []:
+            measure_title = measure.get('title')
+            param_type = measure.get('param_type')
+            unit = measure.get('unit')
+
+            for cls in measure.get('categories', []) or []:
+                for value_block in cls.get('values', []) or []:
+                    tail_title = value_block.get('title') or measure_title
+
+                    for m in value_block.get('measurements', []) or []:
+                        group_id = m.get('groupId', '')
+                        value_raw = m.get('value')
+
+                        if not group_id or value_raw is None or tail_title is None:
+                            continue
+
+                        if self._is_count_type(param_type):
+                            if not self._is_positive_number(value_raw):
+                                continue
+
+                        head = self._build_baseline_head(nct_id, group_id)
+                        if not head:
+                            continue
+
+                        relation = self._build_baseline_relation(tail_title)
+
+                        triples.append({
+                            'head': head,
+                            'relation': relation,
+                            'tail': str(value_raw),
+                            'head_type': 'TrialGroup',
+                            'tail_type': 'Value',
+                            'tail_attributes': {
+                                'unit': unit,
+                                'param_type': param_type,
+                                'title': tail_title
+                            }
+                        })
+
+        return triples
+
+    def _build_baseline_head(self, nct_id: str, group_id: str) -> str:
+        """Build head entity as NCTID_XXX where XXX is the last 3 digits from group id."""
+        import re
+        match = re.search(r'(\d{3})$', str(group_id))
+        if not match:
+            return ""
+        return f"{nct_id}_{match.group(1)}"
+
+    def _is_count_type(self, param_type: str) -> bool:
+        """Check whether param type indicates count."""
+        if not param_type:
+            return False
+        p = str(param_type).upper()
+        return 'COUNT' in p or p == 'NUMBER'
+
+    def _is_positive_number(self, value) -> bool:
+        """Return True when numeric value is greater than zero."""
+        try:
+            return float(value) > 0
+        except (TypeError, ValueError):
+            return False
+
+    def _build_baseline_relation(self, title: str) -> str:
+        """Build normalized relation name: baseline_characteristics_<title>."""
+        import re
+        clean = re.sub(r'[^a-zA-Z0-9]+', '_', str(title).strip()).strip('_')
+        return f"baseline_characteristics_{clean}" if clean else "baseline_characteristics"
     
     def prepare_input(self, trial_data: Any) -> Dict:
         """
@@ -349,4 +461,3 @@ class Task3EligibilityStructuring(BaseTaskHandler):
             'error': 'Failed to parse response',
             'raw_response': response[:500]
         }
-

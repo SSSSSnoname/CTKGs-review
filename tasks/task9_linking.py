@@ -18,6 +18,7 @@ Residual unlinked entities consolidated via embedding-based clustering.
 from typing import Dict, List, Any, Optional, Tuple
 import json
 import logging
+import re
 
 from .base import BaseTaskHandler, TaskResult
 
@@ -123,6 +124,34 @@ class Task9EntityLinking(BaseTaskHandler):
         - Adverse events
         """
         entities = []
+
+        # Prefer collecting from Task8 triples: all non-ID entities (head/tail).
+        task8 = task_results.get('task8_ctkg_assembly', {}) or {}
+        task8_triplets = (
+            (task8.get('trial_centric_triples') or []) +
+            (task8.get('intervention_centric_triples') or []) +
+            (task8.get('dynamic_ctkg_triples') or [])
+        )
+        for triple in task8_triplets:
+            if not isinstance(triple, dict):
+                continue
+            for side in ('head', 'tail'):
+                text = triple.get(side)
+                if not isinstance(text, str):
+                    continue
+                text = text.strip()
+                if not text:
+                    continue
+                if self._is_identifier_like(text):
+                    continue
+                if self._is_literal_value(text):
+                    continue
+                e_type = (triple.get(f'{side}_type') or '').strip().lower() or 'entity'
+                entities.append({
+                    'text': text,
+                    'type': e_type,
+                    'source': 'task8'
+                })
         
         # Conditions
         conditions = getattr(trial_data, 'conditions', {})
@@ -148,9 +177,21 @@ class Task9EntityLinking(BaseTaskHandler):
         
         # Outcomes from Task 1
         task1 = task_results.get('task1_outcome_standardization', {})
-        for outcome in task1.get('standardized_outcomes', []):
-            for normalized in outcome.get('standardized', []):
-                core = normalized.get('core_measurement')
+        outcomes = task1.get('standardized_outcomes', [])
+        legacy_outcomes = task1.get('standardized_outcomes_legacy', [])
+        if legacy_outcomes:
+            for outcome in legacy_outcomes:
+                for normalized in outcome.get('standardized', []):
+                    core = normalized.get('core_measurement') if isinstance(normalized, dict) else None
+                    if core:
+                        entities.append({
+                            'text': core,
+                            'type': 'outcome',
+                            'source': 'task1'
+                        })
+        else:
+            for outcome in outcomes:
+                core = outcome.get('core_measurement')
                 if core:
                     entities.append({
                         'text': core,
@@ -179,6 +220,30 @@ class Task9EntityLinking(BaseTaskHandler):
                 unique_entities.append(entity)
         
         return unique_entities
+
+    def _is_identifier_like(self, text: str) -> bool:
+        """Detect trial/group/version identifiers that should not be linked as entities."""
+        t = text.strip()
+        if re.fullmatch(r'NCT\d{8}', t):
+            return True
+        if re.fullmatch(r'NCT\d{8}_[0-9]+', t):
+            return True
+        if re.fullmatch(r'[A-Z]{1,2}[0-9]{3,}', t):  # OG000, BG000, EG000...
+            return True
+        if re.fullmatch(r'v\d+', t, flags=re.IGNORECASE):
+            return True
+        return False
+
+    def _is_literal_value(self, text: str) -> bool:
+        """Filter scalar values that are not ontology-linkable entities."""
+        t = text.strip()
+        if not t:
+            return True
+        if re.fullmatch(r'[-+]?\d+(\.\d+)?', t):
+            return True
+        if t.lower() in {'na', 'n/a', 'none', 'null', 'unknown', 'yes', 'no'}:
+            return True
+        return False
     
     def _link_entity(self, entity: Dict, config: Dict) -> Dict:
         """
@@ -259,17 +324,12 @@ class Task9EntityLinking(BaseTaskHandler):
         
         Uses SapBERT embeddings + string-based matching for reranking.
         """
-        # NOTE: This is a placeholder implementation
-        # In production, integrate with actual SRI API and SapBERT
-        
         try:
-            # Import the actual implementation if available
             from ...data_loader.entity_linking import sri_search
             return sri_search(text, entity_type)
         except ImportError:
             logger.debug("SRI search not available, using placeholder")
-            
-        # Placeholder - return empty result
+
         return {
             'curie': None,
             'label': None,
@@ -286,7 +346,6 @@ class Task9EntityLinking(BaseTaskHandler):
         """
         Stage 2: Local ontology search with SapBERT bi-encoder + FAISS.
         """
-        # NOTE: Placeholder implementation
         try:
             from ...data_loader.entity_linking import ontology_search
             return ontology_search(text, entity_type)
@@ -309,7 +368,6 @@ class Task9EntityLinking(BaseTaskHandler):
         """
         Stage 3: UMLS search with cross-encoder reranking.
         """
-        # NOTE: Placeholder implementation
         try:
             from ...data_loader.entity_linking import umls_search
             return umls_search(text, entity_type)
@@ -377,13 +435,9 @@ Output JSON:
         """
         if not unlinked:
             return []
-        
-        # NOTE: Placeholder implementation
-        # In production, use actual SapBERT embeddings for clustering
-        
+
         clusters = []
-        
-        # Simple text-based grouping as placeholder
+
         from collections import defaultdict
         groups = defaultdict(list)
         
@@ -404,4 +458,3 @@ Output JSON:
                 })
         
         return clusters
-

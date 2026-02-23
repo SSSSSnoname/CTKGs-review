@@ -1,0 +1,548 @@
+{
+  "task_type": "task5_statistical_conclusions",
+  "success": true,
+  "data": {
+    "conclusions": [
+      {
+        "outcome_title": "Overall Survival (OS)",
+        "outcome_type": "PRIMARY",
+        "analysis_type": "comparative",
+        "triplet": {
+          "head_entity_id": "OG001",
+          "head_entity_name": "Substudy 1: Placebo + Regorafenib",
+          "head_entity_2_id": "OG000",
+          "head_entity_2_name": "Substudy 1: Ruxolitinib + Regorafenib",
+          "comparative_relation": "has greater degree than",
+          "relationship_context": "in increasing",
+          "tail_entity_original": "Overall Survival (OS)"
+        },
+        "logic_trace": {
+          "outcome_polarity": "POSITIVE",
+          "head_entity_value": 5.3,
+          "head_entity_2_value": 4.6,
+          "interpretation": "Overall survival is a positive outcome (higher is better). The median OS for OG001 (Placebo + Regorafenib) is 5.3 months, which is greater than OG000 (Ruxolitinib + Regorafenib) at 4.6 months; therefore OG001 shows a greater increase/improvement in OS."
+        },
+        "statistical_significance": false,
+        "is_statistically_significant": false,
+        "statistical_conclusion": "Placebo + Regorafenib shows numerically higher OS (5.3 vs 4.6), but the difference is not statistically significant: log-rank p=0.588 (one-sided) and the two-sided CI (0.73–1.49) for the effect estimate includes 1.",
+        "group_ids": [
+          "OG000",
+          "OG001"
+        ],
+        "p_value": "0.588",
+        "statistical_analysis": {
+          "statisticalMethod": "Log Rank",
+          "pValue": "0.588",
+          "pValueComment": "1-sided",
+          "ciLowerLimit": "0.73",
+          "ciUpperLimit": "1.49",
+          "ciPercentileNtiles": "TWO_SIDED",
+          "testedNonInferiority": null,
+          "nonInferiorityType": "OTHER"
+        },
+        "groups": [
+          {
+            "group_id": "OG000",
+            "group_title": "Substudy 1: Ruxolitinib + Regorafenib",
+            "intervention_description": "Ruxolitinib 15 mg BID continuous with regorafenib 160 mg QD for the first 21 days of each 28-day cycle.",
+            "values": [
+              {
+                "value": "4.6",
+                "spread": null,
+                "spread_type": null,
+                "category_title": null
+              }
+            ]
+          },
+          {
+            "group_id": "OG001",
+            "group_title": "Substudy 1: Placebo + Regorafenib",
+            "intervention_description": "Placebo BID continuous with regorafenib 160 mg QD for the first 21 days of each 28-day cycle.",
+            "values": [
+              {
+                "value": "5.3",
+                "spread": null,
+                "spread_type": null,
+                "category_title": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "outcome_title": "Overall Survival (OS)",
+        "outcome_type": "PRIMARY",
+        "analysis_type": "comparative",
+        "triplet": {
+          "head_entity_id": "OG002",
+          "head_entity_name": "Substudy 2: Ruxolitinib + Regorafenib",
+          "head_entity_2_id": "OG003",
+          "head_entity_2_name": "Substudy 2: Placebo + Regorafenib",
+          "comparative_relation": "has greater degree than",
+          "relationship_context": "in improving",
+          "tail_entity_original": "Overall Survival (OS)"
+        },
+        "logic_trace": {
+          "outcome_polarity": "POSITIVE",
+          "head_entity_value": 11.4,
+          "head_entity_2_value": 10.9,
+          "interpretation": "Overall survival is a positive outcome (higher is better). The median OS in OG002 (11.4 months) is greater than in OG003 (10.9 months) by 0.5 months, so OG002 shows a greater improvement in OS."
+        },
+        "statistical_significance": false,
+        "is_statistically_significant": false,
+        "statistical_conclusion": "Numerically longer OS with Ruxolitinib + Regorafenib (11.4 vs 10.9), but the one-sided log-rank p=0.136 and the two-sided CI for the hazard ratio (0.48–1.23) includes 1, so there is no statistically significant difference.",
+        "group_ids": [
+          "OG002",
+          "OG003"
+        ],
+        "p_value": "0.136",
+        "statistical_analysis": {
+          "statisticalMethod": "Log Rank",
+          "pValue": "0.136",
+          "pValueComment": "1-sided",
+          "ciLowerLimit": "0.48",
+          "ciUpperLimit": "1.23",
+          "ciPercentileNtiles": "TWO_SIDED",
+          "testedNonInferiority": null,
+          "nonInferiorityType": "OTHER"
+        },
+        "groups": [
+          {
+            "group_id": "OG002",
+            "group_title": "Substudy 2: Ruxolitinib + Regorafenib",
+            "intervention_description": "Ruxolitinib 15 mg BID continuous with regorafenib 160 mg QD for the first 21 days of each 28-day cycle.",
+            "values": [
+              {
+                "value": "11.4",
+                "spread": null,
+                "spread_type": null,
+                "category_title": null
+              }
+            ]
+          },
+          {
+            "group_id": "OG003",
+            "group_title": "Substudy 2: Placebo + Regorafenib",
+            "intervention_description": "Placebo BID continuous with regorafenib 160 mg QD for the first 21 days of each 28-day cycle.",
+            "values": [
+              {
+                "value": "10.9",
+                "spread": null,
+                "spread_type": null,
+                "category_title": null
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "comparative_conclusions": [
+      {
+        "outcome_title": "Overall Survival (OS)",
+        "outcome_type": "PRIMARY",
+        "analysis_type": "comparative",
+        "triplet": {
+          "head_entity_id": "OG001",
+          "head_entity_name": "Substudy 1: Placebo + Regorafenib",
+          "head_entity_2_id": "OG000",
+          "head_entity_2_name": "Substudy 1: Ruxolitinib + Regorafenib",
+          "comparative_relation": "has greater degree than",
+          "relationship_context": "in increasing",
+          "tail_entity_original": "Overall Survival (OS)"
+        },
+        "logic_trace": {
+          "outcome_polarity": "POSITIVE",
+          "head_entity_value": 5.3,
+          "head_entity_2_value": 4.6,
+          "interpretation": "Overall survival is a positive outcome (higher is better). The median OS for OG001 (Placebo + Regorafenib) is 5.3 months, which is greater than OG000 (Ruxolitinib + Regorafenib) at 4.6 months; therefore OG001 shows a greater increase/improvement in OS."
+        },
+        "statistical_significance": false,
+        "is_statistically_significant": false,
+        "statistical_conclusion": "Placebo + Regorafenib shows numerically higher OS (5.3 vs 4.6), but the difference is not statistically significant: log-rank p=0.588 (one-sided) and the two-sided CI (0.73–1.49) for the effect estimate includes 1.",
+        "group_ids": [
+          "OG000",
+          "OG001"
+        ],
+        "p_value": "0.588",
+        "statistical_analysis": {
+          "statisticalMethod": "Log Rank",
+          "pValue": "0.588",
+          "pValueComment": "1-sided",
+          "ciLowerLimit": "0.73",
+          "ciUpperLimit": "1.49",
+          "ciPercentileNtiles": "TWO_SIDED",
+          "testedNonInferiority": null,
+          "nonInferiorityType": "OTHER"
+        },
+        "groups": [
+          {
+            "group_id": "OG000",
+            "group_title": "Substudy 1: Ruxolitinib + Regorafenib",
+            "intervention_description": "Ruxolitinib 15 mg BID continuous with regorafenib 160 mg QD for the first 21 days of each 28-day cycle.",
+            "values": [
+              {
+                "value": "4.6",
+                "spread": null,
+                "spread_type": null,
+                "category_title": null
+              }
+            ]
+          },
+          {
+            "group_id": "OG001",
+            "group_title": "Substudy 1: Placebo + Regorafenib",
+            "intervention_description": "Placebo BID continuous with regorafenib 160 mg QD for the first 21 days of each 28-day cycle.",
+            "values": [
+              {
+                "value": "5.3",
+                "spread": null,
+                "spread_type": null,
+                "category_title": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "outcome_title": "Overall Survival (OS)",
+        "outcome_type": "PRIMARY",
+        "analysis_type": "comparative",
+        "triplet": {
+          "head_entity_id": "OG002",
+          "head_entity_name": "Substudy 2: Ruxolitinib + Regorafenib",
+          "head_entity_2_id": "OG003",
+          "head_entity_2_name": "Substudy 2: Placebo + Regorafenib",
+          "comparative_relation": "has greater degree than",
+          "relationship_context": "in improving",
+          "tail_entity_original": "Overall Survival (OS)"
+        },
+        "logic_trace": {
+          "outcome_polarity": "POSITIVE",
+          "head_entity_value": 11.4,
+          "head_entity_2_value": 10.9,
+          "interpretation": "Overall survival is a positive outcome (higher is better). The median OS in OG002 (11.4 months) is greater than in OG003 (10.9 months) by 0.5 months, so OG002 shows a greater improvement in OS."
+        },
+        "statistical_significance": false,
+        "is_statistically_significant": false,
+        "statistical_conclusion": "Numerically longer OS with Ruxolitinib + Regorafenib (11.4 vs 10.9), but the one-sided log-rank p=0.136 and the two-sided CI for the hazard ratio (0.48–1.23) includes 1, so there is no statistically significant difference.",
+        "group_ids": [
+          "OG002",
+          "OG003"
+        ],
+        "p_value": "0.136",
+        "statistical_analysis": {
+          "statisticalMethod": "Log Rank",
+          "pValue": "0.136",
+          "pValueComment": "1-sided",
+          "ciLowerLimit": "0.48",
+          "ciUpperLimit": "1.23",
+          "ciPercentileNtiles": "TWO_SIDED",
+          "testedNonInferiority": null,
+          "nonInferiorityType": "OTHER"
+        },
+        "groups": [
+          {
+            "group_id": "OG002",
+            "group_title": "Substudy 2: Ruxolitinib + Regorafenib",
+            "intervention_description": "Ruxolitinib 15 mg BID continuous with regorafenib 160 mg QD for the first 21 days of each 28-day cycle.",
+            "values": [
+              {
+                "value": "11.4",
+                "spread": null,
+                "spread_type": null,
+                "category_title": null
+              }
+            ]
+          },
+          {
+            "group_id": "OG003",
+            "group_title": "Substudy 2: Placebo + Regorafenib",
+            "intervention_description": "Placebo BID continuous with regorafenib 160 mg QD for the first 21 days of each 28-day cycle.",
+            "values": [
+              {
+                "value": "10.9",
+                "spread": null,
+                "spread_type": null,
+                "category_title": null
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "non_comparative_conclusions": [],
+    "kg_triples": [
+      {
+        "head_entity_1": "NCT02119676_001",
+        "head_entity_2": "NCT02119676_000",
+        "relation": {
+          "comparative_relation": "has greater degree than",
+          "context": "in increasing"
+        },
+        "tail": "Overall Survival",
+        "head_entity_1_type": "Group",
+        "head_entity_2_type": "Group",
+        "tail_type": "Outcome",
+        "head_entity_1_attributes": {
+          "group_id": "NCT02119676_001",
+          "original_group_id": "OG001",
+          "group_title": "Substudy 1: Placebo + Regorafenib",
+          "original_description": "Placebo BID continuous with regorafenib 160 mg QD for the first 21 days of each 28-day cycle.",
+          "interventions": [
+            {
+              "name": "placebo",
+              "original_text": "Placebo BID continuous",
+              "type": "drug",
+              "dosage_form": "tablet (placebo for regorafenib)",
+              "administration_route": "oral",
+              "dosage": "NA",
+              "frequency": "every 12 hours",
+              "Treatment duration": "NA",
+              "id": "01"
+            },
+            {
+              "name": "Regorafenib",
+              "original_text": "regorafenib 160 mg QD",
+              "type": "drug",
+              "dosage_form": "tablet",
+              "administration_route": "oral",
+              "dosage": "160 mg",
+              "frequency": "once a day",
+              "Treatment duration": "21 days",
+              "id": "02"
+            }
+          ],
+          "administration_sequence": "no order"
+        },
+        "head_entity_2_attributes": {
+          "group_id": "NCT02119676_000",
+          "original_group_id": "OG000",
+          "group_title": "Substudy 1: Ruxolitinib + Regorafenib",
+          "original_description": "Ruxolitinib 15 mg BID continuous with regorafenib 160 mg QD for the first 21 days of each 28-day cycle.",
+          "interventions": [
+            {
+              "name": "Ruxolitinib",
+              "original_text": "Ruxolitinib 15 mg BID continuous",
+              "type": "drug",
+              "dosage_form": "tablet",
+              "administration_route": "oral",
+              "dosage": "15 mg",
+              "frequency": "every 12 hours",
+              "Treatment duration": "NA",
+              "id": "01"
+            },
+            {
+              "name": "Regorafenib",
+              "original_text": "regorafenib 160 mg QD for the first 21 days of each 28-day cycle",
+              "type": "drug",
+              "dosage_form": "tablet",
+              "administration_route": "oral",
+              "dosage": "160 mg",
+              "frequency": "once a day",
+              "Treatment duration": "21 days",
+              "id": "02"
+            }
+          ],
+          "administration_sequence": "no order"
+        },
+        "tail_attributes": [
+          {
+            "original_title": "Overall Survival (OS)",
+            "core_measurement": "Overall Survival",
+            "attributes": {
+              "paramType": "MEDIAN",
+              "timeFrame": "Baseline until death due to any cause; up to 16 months or data cut-off 11 FEB 2016.",
+              "unitOfMeasure": "months",
+              "units": "months",
+              "description": "Overall survival is defined as the time from randomization to death due to any cause. Participants without death observed at the time of the analysis will be censored at last date known to be alive. The median overall survival time was estimated using the Kaplan-Meier method. Overall survival was compared between treatment groups using log-rank test.",
+              "outcome_type": "PRIMARY",
+              "measurement_tool": "Not Applicable",
+              "value_condition": "Not Applicable",
+              "conditional_population": "Not Applicable"
+            }
+          }
+        ],
+        "relation_attributes": {
+          "is_significant": false,
+          "p_value": "0.588",
+          "statistical_conclusion": "Placebo + Regorafenib shows numerically higher OS (5.3 vs 4.6), but the difference is not statistically significant: log-rank p=0.588 (one-sided) and the two-sided CI (0.73–1.49) for the effect estimate includes 1.",
+          "statistical_analysis": {
+            "statisticalMethod": "Log Rank",
+            "pValue": "0.588",
+            "pValueComment": "1-sided",
+            "ciLowerLimit": "0.73",
+            "ciUpperLimit": "1.49",
+            "ciPercentileNtiles": "TWO_SIDED",
+            "testedNonInferiority": null,
+            "nonInferiorityType": "OTHER"
+          },
+          "group_values": {
+            "NCT02119676_000": {
+              "group_title": "Substudy 1: Ruxolitinib + Regorafenib",
+              "values": [
+                {
+                  "value": "4.6",
+                  "spread": null,
+                  "spread_type": null,
+                  "category_title": null
+                }
+              ]
+            },
+            "NCT02119676_001": {
+              "group_title": "Substudy 1: Placebo + Regorafenib",
+              "values": [
+                {
+                  "value": "5.3",
+                  "spread": null,
+                  "spread_type": null,
+                  "category_title": null
+                }
+              ]
+            }
+          }
+        },
+        "provenance": {
+          "nct_id": "NCT02119676"
+        }
+      },
+      {
+        "head_entity_1": "NCT02119676_002",
+        "head_entity_2": "NCT02119676_003",
+        "relation": {
+          "comparative_relation": "has greater degree than",
+          "context": "in improving"
+        },
+        "tail": "Overall Survival",
+        "head_entity_1_type": "Group",
+        "head_entity_2_type": "Group",
+        "tail_type": "Outcome",
+        "head_entity_1_attributes": {
+          "group_id": "NCT02119676_002",
+          "original_group_id": "OG002",
+          "group_title": "Substudy 2: Ruxolitinib + Regorafenib",
+          "original_description": "Ruxolitinib 15 mg BID continuous with regorafenib 160 mg QD for the first 21 days of each 28-day cycle.",
+          "interventions": [
+            {
+              "name": "Ruxolitinib",
+              "original_text": "Ruxolitinib 15 mg BID continuous",
+              "type": "drug",
+              "dosage_form": "NA",
+              "administration_route": "NA",
+              "dosage": "15 mg",
+              "frequency": "every 12 hours",
+              "Treatment duration": "NA",
+              "id": "01"
+            },
+            {
+              "name": "Regorafenib",
+              "original_text": "regorafenib 160 mg QD for the first 21 days of each 28-day cycle",
+              "type": "drug",
+              "dosage_form": "NA",
+              "administration_route": "NA",
+              "dosage": "160 mg",
+              "frequency": "once a day",
+              "Treatment duration": "21 days",
+              "id": "02"
+            }
+          ],
+          "administration_sequence": "no order"
+        },
+        "head_entity_2_attributes": {
+          "group_id": "NCT02119676_003",
+          "original_group_id": "OG003",
+          "group_title": "Substudy 2: Placebo + Regorafenib",
+          "original_description": "Placebo BID continuous with regorafenib 160 mg QD for the first 21 days of each 28-day cycle.",
+          "interventions": [
+            {
+              "name": "placebo",
+              "original_text": "Placebo BID continuous",
+              "type": "drug",
+              "dosage_form": "tablet (placebo for regorafenib)",
+              "administration_route": "oral",
+              "dosage": "NA",
+              "frequency": "every 12 hours",
+              "Treatment duration": "NA",
+              "id": "01"
+            },
+            {
+              "name": "Regorafenib",
+              "original_text": "regorafenib 160 mg QD for the first 21 days of each 28-day cycle",
+              "type": "drug",
+              "dosage_form": "tablet",
+              "administration_route": "oral",
+              "dosage": "160 mg",
+              "frequency": "once a day",
+              "Treatment duration": "21 days",
+              "id": "02"
+            }
+          ],
+          "administration_sequence": "no order"
+        },
+        "tail_attributes": [
+          {
+            "original_title": "Overall Survival (OS)",
+            "core_measurement": "Overall Survival",
+            "attributes": {
+              "paramType": "MEDIAN",
+              "timeFrame": "Baseline until death due to any cause; up to 16 months or data cut-off 11 FEB 2016.",
+              "unitOfMeasure": "months",
+              "units": "months",
+              "description": "Overall survival is defined as the time from randomization to death due to any cause. Participants without death observed at the time of the analysis will be censored at last date known to be alive. The median overall survival time was estimated using the Kaplan-Meier method. Overall survival was compared between treatment groups using log-rank test.",
+              "outcome_type": "PRIMARY",
+              "measurement_tool": "Not Applicable",
+              "value_condition": "Not Applicable",
+              "conditional_population": "Not Applicable"
+            }
+          }
+        ],
+        "relation_attributes": {
+          "is_significant": false,
+          "p_value": "0.136",
+          "statistical_conclusion": "Numerically longer OS with Ruxolitinib + Regorafenib (11.4 vs 10.9), but the one-sided log-rank p=0.136 and the two-sided CI for the hazard ratio (0.48–1.23) includes 1, so there is no statistically significant difference.",
+          "statistical_analysis": {
+            "statisticalMethod": "Log Rank",
+            "pValue": "0.136",
+            "pValueComment": "1-sided",
+            "ciLowerLimit": "0.48",
+            "ciUpperLimit": "1.23",
+            "ciPercentileNtiles": "TWO_SIDED",
+            "testedNonInferiority": null,
+            "nonInferiorityType": "OTHER"
+          },
+          "group_values": {
+            "NCT02119676_002": {
+              "group_title": "Substudy 2: Ruxolitinib + Regorafenib",
+              "values": [
+                {
+                  "value": "11.4",
+                  "spread": null,
+                  "spread_type": null,
+                  "category_title": null
+                }
+              ]
+            },
+            "NCT02119676_003": {
+              "group_title": "Substudy 2: Placebo + Regorafenib",
+              "values": [
+                {
+                  "value": "10.9",
+                  "spread": null,
+                  "spread_type": null,
+                  "category_title": null
+                }
+              ]
+            }
+          }
+        },
+        "provenance": {
+          "nct_id": "NCT02119676"
+        }
+      }
+    ],
+    "total_analyses": 2,
+    "processed_analyses": 2,
+    "errors": []
+  },
+  "errors": [],
+  "metadata": {}
+}

@@ -46,13 +46,14 @@ You will receive:
 Extract normalized "core measurement" concepts that are suitable as knowledge graph entities and can be mapped to ontology entities (e.g., SNOMED CT, MeSH, UMLS). Fill supplementary fields ONLY when missing from structured_fields.
 
 # Definitions
-Core measurement = a standardized, atomic (non-compound) biomedical concept representing the minimal endpoint being assessed (event/state/quantity/disease/symptom/lab value).
+Core measurement = a standardized endpoint concept that represents the fundamental outcome being assessed. It can be an event/state/quantity/disease/symptom/lab value.
 
 CRITICAL REQUIREMENTS for core_measurement:
 1. **Use original words from outcome_title**: The core_measurement MUST use the exact words/phrases that appear in the outcome_title, unless expanding abbreviations. Do not use synonyms or add words not present in the original title (e.g., if title says "symptom free", use "symptom free" not "asymptomatic"; if title says "pain relief", use "pain relief" not "analgesia").
 2. **Atomic concept**: Extract a SINGLE, indivisible concept. Avoid compound phrases that combine multiple concepts.
    - GOOD: "blood pressure", "heart rate", "pain intensity", "tumor size"
    - BAD: "change in blood pressure" (includes temporal concept), "blood pressure reduction" (includes direction), "systolic blood pressure at baseline" (includes qualifiers)
+   - If the outcome_title itself is already a standardized clinical endpoint term  (e.g., "Overall Survival", "Progression-Free Survival", "Overall Response Rate"), retain the full endpoint term as the core_measurement after expanding abbreviations.Do NOT reduce it to a more generic underlying concept (e.g., do NOT reduce "Overall Response Rate" to "response").
 3. **MUST NOT include**:
    - Statistical framing: percentage, number of participants, incidence, rate, proportion, count
    - Time information: baseline, follow-up, post-treatment, duration, time points
@@ -65,7 +66,6 @@ CRITICAL REQUIREMENTS for core_measurement:
 1) Extract core_measurement(s) from outcome_title:
    - Identify the fundamental biomedical concept being measured
    - Strip away all modifiers, qualifiers, and contextual information
-   - If multiple distinct concepts are mentioned, create separate entries for each
    
    Examples of extraction:
    - "Change in systolic blood pressure from baseline" → "systolic blood pressure"
@@ -261,6 +261,52 @@ class Task1OutcomeStandardization(BaseTaskHandler):
     @property
     def task_name(self) -> str:
         return "task1_outcome_standardization"
+
+    def _to_flat_records(self, outcome_input: Dict, parsed: Any) -> List[Dict]:
+        """
+        Convert LLM parsed output to final flat schema:
+        {
+          "original_title": str,
+          "core_measurement": str,
+          "attributes": {...}
+        }
+        """
+        if not isinstance(parsed, list):
+            return []
+
+        records: List[Dict] = []
+        existing_attrs = outcome_input.get('existing_attributes', {}) or {}
+        # Keep a stable attribute schema across results/protocol sources.
+        normalized_existing_attrs = {
+            'paramType': existing_attrs.get('paramType'),
+            'timeFrame': existing_attrs.get('timeFrame'),
+            'unitOfMeasure': existing_attrs.get('unitOfMeasure'),
+            'units': existing_attrs.get('units'),
+            'description': existing_attrs.get('description'),
+        }
+
+        for item in parsed:
+            if not isinstance(item, dict):
+                continue
+            core = item.get('core_measurement')
+            if not core:
+                continue
+
+            attrs = dict(normalized_existing_attrs)
+            attrs.update({
+                'outcome_type': outcome_input.get('outcome_type'),
+                'measurement_tool': item.get('measurement_tool', 'Not Applicable'),
+                'value_condition': item.get('value_condition', 'Not Applicable'),
+                'conditional_population': item.get('conditional_population', 'Not Applicable')
+            })
+
+            records.append({
+                'original_title': outcome_input.get('outcome_title', ''),
+                'core_measurement': core,
+                'attributes': attrs
+            })
+
+        return records
     
     def execute(self, trial_data: Any, **kwargs) -> TaskResult:
         """
@@ -298,12 +344,9 @@ class Task1OutcomeStandardization(BaseTaskHandler):
                     # Parse response
                     parsed = parse_outcome_response(response)
                     
-                    standardized_outcomes.append({
-                        'original_title': outcome_input['outcome_title'],
-                        'outcome_type': outcome_input.get('outcome_type'),
-                        'standardized': parsed,
-                        'attributes': outcome_input.get('existing_attributes', {})
-                    })
+                    standardized_outcomes.extend(
+                        self._to_flat_records(outcome_input, parsed)
+                    )
                     
                 except Exception as e:
                     logger.error(f"Failed to process outcome: {e}")
@@ -386,7 +429,10 @@ class Task1OutcomeStandardization(BaseTaskHandler):
                 'outcome_title': outcome.get('measure', ''),
                 'outcome_type': 'PRIMARY',
                 'existing_attributes': {
+                    'paramType': None,
                     'timeFrame': outcome.get('timeFrame'),
+                    'unitOfMeasure': None,
+                    'units': None,
                     'description': outcome.get('description')
                 }
             }
@@ -398,11 +444,13 @@ class Task1OutcomeStandardization(BaseTaskHandler):
                 'outcome_title': outcome.get('measure', ''),
                 'outcome_type': 'SECONDARY',
                 'existing_attributes': {
+                    'paramType': None,
                     'timeFrame': outcome.get('timeFrame'),
+                    'unitOfMeasure': None,
+                    'units': None,
                     'description': outcome.get('description')
                 }
             }
             outcomes.append(outcome_input)
         
         return outcomes
-

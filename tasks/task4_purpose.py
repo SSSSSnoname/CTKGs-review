@@ -15,6 +15,7 @@ diseases/symptoms/endpoints (tail entities) with standardized purpose relations.
 from typing import Dict, List, Any
 import json
 import logging
+import re
 
 from .base import BaseTaskHandler, TaskResult
 
@@ -55,11 +56,13 @@ Given the briefSummary of the trial, determine the PURPOSE relationship between 
   - If the head entity is a combination drug or therapy, specify the COMPLETE combination
   - Do NOT use abbreviations
   - Do NOT output erroneous or redundant head entities
+  - Use canonical biomedical KG concepts only (remove redundant qualifiers such as dose, frequency, route, schedule, arm labels)
 
 - **Correct and update the 'tail_entity' fields** based on the information in the trial summary
   - Tail entities should be diseases, symptoms, or clinical endpoints
   - Extract tail entities DIRECTLY from the trial summary
   - If your tail entity is empty, the answer should be "no"
+  - Use canonical biomedical KG concepts only (remove redundant qualifiers such as time window, baseline/change, thresholds, comparator phrases)
 
 - **Correct and update the 'purpose' field** based on the information in the trial summary
   - Use ONLY these standardized purpose options:
@@ -68,6 +71,7 @@ Given the briefSummary of the trial, determine the PURPOSE relationship between 
     * **support**: The intervention provides supportive care
     * **decrease**: The intervention aims to decrease/reduce something (e.g., side effects, risk)
     * **increase**: The intervention aims to increase something (e.g., survival, response rate)
+    * **analysis**: The intervention is analyzed/evaluated/compared without explicit therapeutic intent
 
 # Provided Head Entities (Interventions)
 {json.dumps(head_entities, indent=2) if head_entities else '["Unknown intervention"]'}
@@ -88,7 +92,7 @@ Please respond with a valid JSON object in the following format:
 {{
     "answer": "yes" or "no",
     "reason": "Provide a brief explanation of the purpose relationship",
-{entity_fields}    "purpose": "treat" | "improve" | "support" | "decrease" | "increase",
+{entity_fields}    "purpose": "treat" | "improve" | "support" | "decrease" | "increase" | "analysis",
     "tail_entity": ["Corrected tail entity (disease/symptom/endpoint)", ...]
 }}
 
@@ -128,6 +132,7 @@ Infer the primary purpose relationship between interventions and target conditio
    - support: The intervention provides supportive care
    - decrease: The intervention decreases/reduces something
    - increase: The intervention increases something
+   - analysis: The intervention is analyzed/evaluated/compared without explicit therapeutic intent
 
 # Input Data
 Title: {title}
@@ -140,7 +145,7 @@ Interventions: {interventions}
     "answer": "yes" or "no",
     "reason": "Brief explanation",
     "head_entities": ["intervention 1", "intervention 2", ...],
-    "purpose": "treat" | "improve" | "support" | "decrease" | "increase",
+    "purpose": "treat" | "improve" | "support" | "decrease" | "increase" | "analysis",
     "tail_entities": ["disease/symptom/endpoint 1", ...],
     "confidence": "HIGH" | "MEDIUM" | "LOW"
 }}
@@ -163,7 +168,7 @@ class Task4PurposeInference(BaseTaskHandler):
     """
     
     # Valid purpose options
-    VALID_PURPOSES = ['treat', 'improve', 'support', 'decrease', 'increase']
+    VALID_PURPOSES = ['treat', 'improve', 'support', 'decrease', 'increase', 'analysis']
     
     @property
     def task_name(self) -> str:
@@ -302,7 +307,14 @@ class Task4PurposeInference(BaseTaskHandler):
                 'lower': 'decrease',
                 'raise': 'increase',
                 'enhance': 'increase',
-                'supportive': 'support'
+                'supportive': 'support',
+                'analyze': 'analysis',
+                'analysis': 'analysis',
+                'assess': 'analysis',
+                'evaluate': 'analysis',
+                'comparison': 'analysis',
+                'compare': 'analysis',
+                'evaluation': 'analysis'
             }
             inferred['purpose'] = purpose_map.get(purpose, 'treat')
         else:
@@ -312,17 +324,39 @@ class Task4PurposeInference(BaseTaskHandler):
         head_entities = []
         for key, value in inferred.items():
             if key.startswith('head_entity_') and value:
-                head_entities.append(value)
+                head_entities.append(self._sanitize_biomedical_entity(str(value)))
         inferred['head_entities'] = head_entities if head_entities else initial_triplets.get('head_entities', [])
         
         # Ensure tail_entity is a list
         tail = inferred.get('tail_entity', [])
         if isinstance(tail, str):
-            inferred['tail_entity'] = [tail] if tail else []
+            inferred['tail_entity'] = [self._sanitize_biomedical_entity(tail)] if tail else []
         elif not isinstance(tail, list):
             inferred['tail_entity'] = []
+        else:
+            inferred['tail_entity'] = [
+                self._sanitize_biomedical_entity(str(t))
+                for t in tail if t
+            ]
         
         return inferred
+
+    def _sanitize_biomedical_entity(self, text: str) -> str:
+        """Trim common non-concept qualifiers for cleaner KG entities."""
+        t = (text or "").strip()
+        if not t:
+            return t
+        # Remove common temporal/statistical qualifier tails.
+        t = re.sub(r'\b(from baseline|change from baseline|at baseline|over \d+\s*(day|days|week|weeks|month|months|year|years))\b.*$', '', t, flags=re.IGNORECASE)
+        # Remove threshold expressions.
+        t = re.sub(r'(<=|>=|<|>|≤|≥|=)\s*\d+(?:\.\d+)?(?:/\d+(?:\.\d+)?)?\s*[a-zA-Z%/]*', '', t)
+        # Remove bracketed qualifier notes.
+        t = re.sub(r'\((?:dose|frequency|route|arm|group|schedule|time)[^)]*\)', '', t, flags=re.IGNORECASE)
+        t = re.sub(r'\[[^]]*\]', '', t)
+        # Trim trailing condition introducers.
+        t = re.sub(r'\b(with|without|if|unless|when|where)\b.*$', '', t, flags=re.IGNORECASE)
+        t = re.sub(r'\s+', ' ', t).strip(' ,;.-')
+        return t or text.strip()
     
     def _generate_kg_triples(self, nct_id: str, inferred: Dict) -> List[Dict]:
         """Generate knowledge graph triples from inferred purpose."""
@@ -345,7 +379,7 @@ class Task4PurposeInference(BaseTaskHandler):
                     'tail': tail,
                     'head_type': 'Intervention',
                     'tail_type': 'Disease/Symptom/Endpoint',
-                    'source_trial': nct_id
+                    'provenance': {'nct_id': nct_id}
                 })
         
         # Also link interventions to the trial
@@ -360,4 +394,3 @@ class Task4PurposeInference(BaseTaskHandler):
                 })
         
         return triples
-

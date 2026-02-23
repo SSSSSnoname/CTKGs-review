@@ -3,7 +3,7 @@ Task 7: Building the Dynamic CTKG (Protocol Versioning)
 
 For trials with multiple registry versions:
 - Each version is represented as a distinct node (trial ID + version)
-- 24 harmonized fields tracked (locations, enrollment, outcomes, key dates, etc.)
+- 29 harmonized fields tracked (locations, enrollment, outcomes, key dates, etc.)
 - Version-to-version differences computed and classified as: added, removed, modified, unchanged
 
 Text-intensive fields (eligibility criteria, outcome definitions, termination reasons)
@@ -15,10 +15,12 @@ All versioned nodes link back to canonical NCTID for trial-centric CTKG consiste
 
 from typing import Dict, List, Any, Optional, Tuple, Union
 from dataclasses import dataclass, field
+import difflib
 from enum import Enum
 import json
 import logging
 import re
+import html
 from datetime import datetime
 
 from .base import BaseTaskHandler, TaskResult
@@ -71,7 +73,7 @@ TERMINATION_CATEGORIES = {
 TERMINATION_CATEGORY_NAMES = list(TERMINATION_CATEGORIES.keys())
 
 
-# 24 Harmonized tracked fields organized by category
+# 29 Harmonized tracked fields organized by category
 TRACKED_FIELDS_CONFIG = {
     # Status fields
     'overallStatus': {
@@ -254,7 +256,7 @@ TRACKED_FIELDS_CONFIG = {
     },
 }
 
-# List of all tracked field names (24 fields)
+# List of all tracked field names (29 fields)
 TRACKED_FIELDS = list(TRACKED_FIELDS_CONFIG.keys())
 
 
@@ -487,7 +489,7 @@ class TerminationInfo:
 
 class VersionFieldExtractor:
     """
-    Extracts and harmonizes 24 tracked fields from version data.
+    Extracts and harmonizes tracked fields from version data.
     
     Handles nested paths in ClinicalTrials.gov API response structure.
     """
@@ -503,7 +505,7 @@ class VersionFieldExtractor:
     
     def extract_all_fields(self, version_data: Dict) -> Dict[str, Any]:
         """
-        Extract all 24 tracked fields from version data.
+        Extract all tracked fields from version data.
         
         Args:
             version_data: Raw version data from API
@@ -543,7 +545,13 @@ class VersionFieldExtractor:
         else:
             root = version_data
         
-        return self._navigate_path(root, path)
+        value = self._navigate_path(root, path)
+        if field_name in ("primaryOutcomes", "secondaryOutcomes"):
+            outcomes_root = root.get("outcomesModule", {}) if isinstance(root, dict) else {}
+            peer_name = "secondaryOutcomes" if field_name == "primaryOutcomes" else "primaryOutcomes"
+            peer_value = outcomes_root.get(peer_name)
+            return self._normalize_outcomes_value(field_name, value, peer_value=peer_value)
+        return value
     
     def _navigate_path(self, data: Any, path: List[str]) -> Any:
         """Navigate a nested path to extract a value."""
@@ -562,6 +570,112 @@ class VersionFieldExtractor:
                 return None
         
         return current
+
+    def _normalize_outcomes_value(self, field_name: str, value: Any, peer_value: Any = None) -> Any:
+        """
+        Normalize malformed outcomes payloads from version history.
+
+        Some snapshots encode all outcomes as a JSON string inside:
+        [{"measure": "[{...},{...}]"}]
+        This method unwraps that shape and, when ordinal labels exist, splits
+        outcomes into primary/secondary according to field_name.
+        """
+        if not isinstance(value, list):
+            return value
+
+        normalized = value
+        fragmented = self._try_parse_fragmented_outcomes(value)
+        if fragmented is not None:
+            normalized = fragmented
+
+        if (
+            len(value) == 1
+            and isinstance(value[0], dict)
+            and isinstance(value[0].get("measure"), str)
+        ):
+            parsed = self._try_parse_outcomes_list(value[0].get("measure", ""))
+            if parsed is not None:
+                normalized = parsed
+
+        if (not isinstance(normalized, list) or not normalized) and peer_value is not None:
+            peer_fragmented = self._try_parse_fragmented_outcomes(peer_value)
+            if peer_fragmented is not None:
+                normalized = peer_fragmented
+            elif isinstance(peer_value, list):
+                normalized = peer_value
+            else:
+                return normalized
+        if not isinstance(normalized, list) or not normalized:
+            return normalized
+
+        has_ordinal = any(
+            isinstance(item, dict) and str(item.get("ordinal", "")).strip()
+            for item in normalized
+        )
+        if not has_ordinal:
+            return normalized
+
+        target = "primary" if field_name == "primaryOutcomes" else "secondary"
+        filtered = [
+            item for item in normalized
+            if isinstance(item, dict)
+            and target in str(item.get("ordinal", "")).strip().lower()
+        ]
+        return filtered
+
+    def _try_parse_fragmented_outcomes(self, value: Any) -> Optional[List[Dict]]:
+        """
+        Rebuild outcomes when a JSON list is split across multiple dict.measure chunks.
+
+        Example input:
+        [{"measure":"[{...primary..."}, {"measure":"...},{...secondary..."}]
+        """
+        if not isinstance(value, list) or not value:
+            return None
+        if not all(isinstance(item, dict) and isinstance(item.get("measure"), str) for item in value):
+            return None
+        parts = [item.get("measure", "").strip() for item in value if item.get("measure", "").strip()]
+        if not parts:
+            return None
+        candidates = [
+            "".join(parts),
+            ",".join(parts),
+            " ".join(parts),
+        ]
+        for joined in candidates:
+            if "[" not in joined or "{" not in joined:
+                continue
+            # Trim to the outermost JSON list span when extra text is present.
+            start = joined.find("[")
+            end = joined.rfind("]")
+            payload = joined[start:end + 1] if start >= 0 and end > start else joined
+            parsed = self._try_parse_outcomes_list(payload)
+            if isinstance(parsed, list):
+                return parsed
+        return None
+
+    def _try_parse_outcomes_list(self, text: str) -> Optional[List[Dict]]:
+        """Parse a JSON-encoded outcomes list; return None on failure."""
+        raw = (text or "").strip()
+        if not raw:
+            return []
+
+        # Remove one level of surrounding quotes when present.
+        if (
+            len(raw) >= 2
+            and raw[0] == raw[-1]
+            and raw[0] in ("'", '"')
+        ):
+            raw = raw[1:-1]
+
+        for candidate in (raw, raw.replace('\\"', '"')):
+            try:
+                parsed = json.loads(candidate)
+            except Exception:
+                continue
+            if isinstance(parsed, list):
+                return parsed
+        return None
     
     def get_field_category(self, field_name: str) -> Optional[FieldCategory]:
         """Get the category of a field."""
@@ -1306,7 +1420,7 @@ class Task7DynamicCTKG(BaseTaskHandler):
     enabling analysis of trial evolution over time.
     
     Features:
-    - Version node creation with 24 harmonized fields
+    - Version node creation with 29 harmonized fields
     - Version-to-version diff computation
     - Entity-level comparison for text-intensive fields
     - Termination reason normalization
@@ -2145,13 +2259,13 @@ class Task7DynamicCTKG(BaseTaskHandler):
         """
         Generate a tabular representation of all changes across versions.
         
-        Each row represents a single change:
-        - nct_id: Trial ID
-        - version: Version number (e.g., "v1 → v2")
-        - field: Field name that changed
-        - old_value: Previous value
-        - new_value: New value
-        - change_type: Type of change (added, removed, modified)
+        Each row represents a single change with fixed columns:
+        - nct_id
+        - version
+        - field_name
+        - old
+        - new
+        - change_category (added, removed, change)
         
         Excludes unchanged fields.
         
@@ -2164,17 +2278,15 @@ class Task7DynamicCTKG(BaseTaskHandler):
         changes_table = []
         
         for i, node in enumerate(version_nodes):
-            if i == 0:
-                continue  # Skip first version (no changes to compare)
-            
             nct_id = node.nct_id
-            version_label = f"v{i} → v{i+1}"
+            is_first_version = (i == 0)
+            version_label = "v0, v1" if is_first_version else f"v{i}, v{i+1}"
             
             # Process tagged_fields (tracked fields)
             for field_name, tagged_field in node.tagged_fields.items():
                 if tagged_field.status == ChangeType.UNCHANGED:
                     continue
-                if tagged_field.status == ChangeType.FIRST_VERSION:
+                if tagged_field.status == ChangeType.FIRST_VERSION and not is_first_version:
                     continue
                 
                 # For list fields with entity-level changes
@@ -2182,72 +2294,123 @@ class Task7DynamicCTKG(BaseTaskHandler):
                     for entity in tagged_field.entity_changes:
                         if entity.status == ChangeType.UNCHANGED:
                             continue
-                        if entity.status == ChangeType.FIRST_VERSION:
+                        if entity.status == ChangeType.FIRST_VERSION and not is_first_version:
                             continue
-                        
+
+                        effective_status = (
+                            ChangeType.ADDED.value
+                            if entity.status == ChangeType.FIRST_VERSION
+                            else entity.status.value
+                        )
+
+                        if field_name in ['primaryOutcomes', 'secondaryOutcomes']:
+                            outcome_rows = self._outcome_item_rows(
+                                nct_id=nct_id,
+                                version=version_label,
+                                field_name=field_name,
+                                old_value=entity.previous_value,
+                                new_value=entity.value,
+                                effective_status=effective_status,
+                            )
+                            if outcome_rows:
+                                changes_table.extend(outcome_rows)
+                                continue
+
                         old_val = self._format_value(entity.previous_value) if entity.previous_value else ""
-                        new_val = self._format_value(entity.value) if entity.status != ChangeType.REMOVED else ""
-                        
-                        if entity.status == ChangeType.REMOVED:
+                        new_val = self._format_value(entity.value) if effective_status != ChangeType.REMOVED.value else ""
+                        if effective_status == ChangeType.REMOVED.value:
                             old_val = self._format_value(entity.value)
                             new_val = ""
-                        
-                        # Skip if formatted values are the same (internal change like geoPoint)
-                        # These are not meaningful changes from a user perspective
-                        if entity.status == ChangeType.MODIFIED and old_val == new_val:
+
+                        if effective_status == ChangeType.MODIFIED.value and old_val == new_val:
                             continue
-                        
+
                         changes_table.append({
                             'nct_id': nct_id,
                             'version': version_label,
-                            'field': field_name,
-                            'old_value': old_val,
-                            'new_value': new_val,
-                            'change_type': entity.status.value
+                            'field_name': field_name,
+                            'old': old_val,
+                            'new': new_val,
+                            'change_category': self._normalize_change_category(effective_status)
                         })
                 else:
                     # Scalar field change
+                    if field_name == 'eligibilityCriteria':
+                        item_rows = self._eligibility_item_change_rows(
+                            nct_id=nct_id,
+                            version=version_label,
+                            old_text=tagged_field.previous_value or "",
+                            new_text=tagged_field.value or "",
+                        )
+                        if item_rows:
+                            changes_table.extend(item_rows)
+                        else:
+                            effective_status = (
+                                ChangeType.ADDED.value
+                                if tagged_field.status == ChangeType.FIRST_VERSION
+                                else tagged_field.status.value
+                            )
+                            changes_table.append({
+                                'nct_id': nct_id,
+                                'version': version_label,
+                                'field_name': 'eligibilityCriteria',
+                                'old': "" if effective_status == ChangeType.ADDED.value else self._format_value(tagged_field.previous_value),
+                                'new': self._format_value(tagged_field.value),
+                                'change_category': self._normalize_change_category(effective_status)
+                            })
+                        continue
+                    field_cfg = TRACKED_FIELDS_CONFIG.get(field_name, {})
+                    is_text_intensive = bool(field_cfg.get('text_intensive'))
+                    if (
+                        is_text_intensive
+                        and isinstance(tagged_field.previous_value, str)
+                        and isinstance(tagged_field.value, str)
+                        and tagged_field.status == ChangeType.MODIFIED
+                    ):
+                        sentence_rows = self._sentence_change_rows(
+                            nct_id=nct_id,
+                            version=version_label,
+                            field_name=field_name,
+                            old_text=tagged_field.previous_value,
+                            new_text=tagged_field.value,
+                        )
+                        if sentence_rows:
+                            changes_table.extend(sentence_rows)
+                            continue
+
+                    effective_status = (
+                        ChangeType.ADDED.value
+                        if tagged_field.status == ChangeType.FIRST_VERSION
+                        else tagged_field.status.value
+                    )
+
+                    if field_name in ['primaryOutcomes', 'secondaryOutcomes']:
+                        outcome_rows = self._outcome_item_rows(
+                            nct_id=nct_id,
+                            version=version_label,
+                            field_name=field_name,
+                            old_value=tagged_field.previous_value,
+                            new_value=tagged_field.value,
+                            effective_status=effective_status,
+                        )
+                        if outcome_rows:
+                            changes_table.extend(outcome_rows)
+                            continue
+
                     changes_table.append({
                         'nct_id': nct_id,
                         'version': version_label,
-                        'field': field_name,
-                        'old_value': self._format_value(tagged_field.previous_value),
-                        'new_value': self._format_value(tagged_field.value),
-                        'change_type': tagged_field.status.value
+                        'field_name': field_name,
+                        'old': "" if effective_status == ChangeType.ADDED.value else self._format_value(tagged_field.previous_value),
+                        'new': self._format_value(tagged_field.value),
+                        'change_category': self._normalize_change_category(effective_status)
                     })
             
             # Process tagged_structured_text_fields
             for field_name, tagged_stf in node.tagged_structured_text_fields.items():
                 if field_name == 'eligibility':
-                    # Eligibility has inclusion/exclusion
-                    for criteria_type in ['inclusion', 'exclusion']:
-                        items = tagged_stf.get(criteria_type, [])
-                        for item in items:
-                            status = item.get('status', '')
-                            if status in ['unchanged', 'first_version']:
-                                continue
-                            
-                            value = item.get('value', '')
-                            prev_value = item.get('previous_value', '')
-                            
-                            if status == 'removed':
-                                old_val = self._truncate(value, 100)
-                                new_val = ""
-                            elif status == 'added':
-                                old_val = ""
-                                new_val = self._truncate(value, 100)
-                            else:  # modified
-                                old_val = self._truncate(prev_value, 100)
-                                new_val = self._truncate(value, 100)
-                            
-                            changes_table.append({
-                                'nct_id': nct_id,
-                                'version': version_label,
-                                'field': f'eligibility.{criteria_type}',
-                                'old_value': old_val,
-                                'new_value': new_val,
-                                'change_type': status
-                            })
+                    # Use raw eligibilityCriteria diff above for cleaner sentence-level output.
+                    continue
                 
                 elif field_name in ['primaryOutcomes', 'secondaryOutcomes']:
                     # Outcomes list
@@ -2256,57 +2419,513 @@ class Task7DynamicCTKG(BaseTaskHandler):
                             status = outcome.get('status', '')
                             if status in ['unchanged', 'first_version']:
                                 continue
-                            
-                            measure = outcome.get('measure', '')
+
                             prev = outcome.get('previous_value', {})
-                            prev_measure = prev.get('measure', '') if isinstance(prev, dict) else ''
-                            
+                            prev_obj = self._sanitize_outcome_for_display(prev) if isinstance(prev, dict) else {}
+                            curr_obj = self._sanitize_outcome_for_display(
+                                {k: v for k, v in outcome.items() if k not in ['status', 'previous_value']}
+                            )
+
                             if status == 'removed':
-                                old_val = self._truncate(measure, 100)
+                                old_val = self._format_value(curr_obj)
                                 new_val = ""
                             elif status == 'added':
                                 old_val = ""
-                                new_val = self._truncate(measure, 100)
+                                new_val = self._format_value(curr_obj)
                             else:  # modified
-                                old_val = self._truncate(prev_measure, 100)
-                                new_val = self._truncate(measure, 100)
-                            
+                                old_val = self._format_value(prev_obj)
+                                new_val = self._format_value(curr_obj)
+
                             changes_table.append({
                                 'nct_id': nct_id,
                                 'version': version_label,
-                                'field': field_name,
-                                'old_value': old_val,
-                                'new_value': new_val,
-                                'change_type': status
+                                'field_name': field_name,
+                                'old': old_val,
+                                'new': new_val,
+                                'change_category': self._normalize_change_category(status)
                             })
         
+        # Drop meaningless rows where both sides are empty (including "[]").
+        changes_table = [
+            r for r in changes_table
+            if not (
+                self._is_display_empty(r.get('old', ''))
+                and self._is_display_empty(r.get('new', ''))
+            )
+        ]
         return changes_table
+
+    def _normalize_change_category(self, status: str) -> str:
+        """Normalize internal status label to table label."""
+        if status == 'modified':
+            return 'change'
+        return status
+
+    def _sentence_split(self, text: str) -> List[str]:
+        """Split text into comparable sentence-like units."""
+        if not text:
+            return []
+        normalized = html.unescape(str(text))
+        normalized = re.sub(r'(?i)</?(p|br|li|ul|ol|div|span)[^>]*>', '\n', normalized)
+        normalized = re.sub(r'<[^>]+>', ' ', normalized)
+        normalized = re.sub(r'\s+', ' ', normalized).strip()
+
+        # Requested sentence-level split with punctuation (comma + period) and line separators.
+        chunks = re.split(r'[\n;,]+|(?<=[.!?])\s+|(?<=,)\s*', normalized)
+        out = []
+        for c in chunks:
+            s = re.sub(r'\s+', ' ', c or '').strip()
+            # Drop noisy fragments (e.g., broken word pieces from markup splits).
+            token_count = len(re.findall(r'[A-Za-z0-9]+', s))
+            if s and len(s) >= 12 and token_count >= 2:
+                out.append(s)
+        return out
+
+    def _sentence_change_rows(
+        self,
+        nct_id: str,
+        version: str,
+        field_name: str,
+        old_text: str,
+        new_text: str,
+    ) -> List[Dict]:
+        """Build sentence-level add/remove/change rows for text fields."""
+        old_sents = self._sentence_split(old_text)
+        new_sents = self._sentence_split(new_text)
+        rows: List[Dict] = []
+        if not old_sents and not new_sents:
+            return rows
+
+        used_new = set()
+        # Exact matches are unchanged and skipped.
+        old_unmatched = []
+        for i, old in enumerate(old_sents):
+            matched_idx = None
+            for j, new in enumerate(new_sents):
+                if j in used_new:
+                    continue
+                if old == new:
+                    matched_idx = j
+                    break
+            if matched_idx is not None:
+                used_new.add(matched_idx)
+            else:
+                old_unmatched.append((i, old))
+
+        # Fuzzy matching for "change"
+        remaining_new = [(j, s) for j, s in enumerate(new_sents) if j not in used_new]
+        matched_old = set()
+        matched_new = set()
+        for oi, old in old_unmatched:
+            best_j = None
+            best_score = 0.0
+            for j, new in remaining_new:
+                if j in matched_new:
+                    continue
+                score = difflib.SequenceMatcher(None, old, new).ratio()
+                if score > best_score:
+                    best_score = score
+                    best_j = j
+            if best_j is not None and best_score >= 0.6:
+                new = new_sents[best_j]
+                if self._has_meaningful_word_change(old, new):
+                    rows.append({
+                        'nct_id': nct_id,
+                        'version': version,
+                        'field_name': field_name,
+                        'old': self._truncate(old, 400),
+                        'new': self._truncate(new, 400),
+                        'change_category': 'change'
+                    })
+                matched_old.add(oi)
+                matched_new.add(best_j)
+
+        # Removed
+        for oi, old in old_unmatched:
+            if oi in matched_old:
+                continue
+            rows.append({
+                'nct_id': nct_id,
+                'version': version,
+                'field_name': field_name,
+                'old': self._truncate(old, 400),
+                'new': "",
+                'change_category': 'removed'
+            })
+
+        # Added
+        for j, new in remaining_new:
+            if j in matched_new:
+                continue
+            rows.append({
+                'nct_id': nct_id,
+                'version': version,
+                'field_name': field_name,
+                'old': "",
+                'new': self._truncate(new, 400),
+                'change_category': 'added'
+            })
+
+        return rows
+
+    def _has_meaningful_word_change(self, old_text: str, new_text: str) -> bool:
+        """
+        True only when there is at least one substantive word-level change.
+        Ignores case-only, punctuation-only, and tiny one-letter edits.
+        """
+        old_tokens = re.findall(r'[A-Za-z0-9]+', (old_text or '').lower())
+        new_tokens = re.findall(r'[A-Za-z0-9]+', (new_text or '').lower())
+
+        # No token-level delta -> not meaningful
+        if old_tokens == new_tokens:
+            return False
+
+        # Added/removed token count usually means meaningful change.
+        if len(old_tokens) != len(new_tokens):
+            # But ignore trivial single-character token churn.
+            long_old = [t for t in old_tokens if len(t) > 1]
+            long_new = [t for t in new_tokens if len(t) > 1]
+            return long_old != long_new
+
+        # Same token length: need at least one substantive replacement.
+        for old_tok, new_tok in zip(old_tokens, new_tokens):
+            if old_tok == new_tok:
+                continue
+            # Ignore tiny one-letter edits (e.g., typo/case artifacts)
+            if (
+                abs(len(old_tok) - len(new_tok)) <= 1
+                and difflib.SequenceMatcher(None, old_tok, new_tok).ratio() >= 0.9
+            ):
+                continue
+            return True
+
+        return False
+
+    def _parse_eligibility_sections(self, text: str) -> Dict[str, List[str]]:
+        """Parse raw eligibility criteria into inclusion/exclusion bullet items."""
+        result = {"inclusion": [], "exclusion": []}
+        if not text:
+            return result
+
+        raw = html.unescape(str(text))
+        raw = re.sub(r'(?i)<\s*br\s*/?\s*>', '\n', raw)
+        raw = re.sub(r'(?i)</\s*li\s*>', '\n', raw)
+        raw = re.sub(r'(?i)<\s*li[^>]*>', '- ', raw)
+        raw = re.sub(r'(?i)</?\s*p[^>]*>', '\n', raw)
+        raw = re.sub(r'(?i)</?\s*ul[^>]*>', '\n', raw)
+        raw = re.sub(r'(?i)</?\s*ol[^>]*>', '\n', raw)
+        raw = re.sub(r'<[^>]+>', ' ', raw)
+        lines = [re.sub(r'\s+', ' ', ln).strip() for ln in raw.splitlines()]
+        lines = [ln for ln in lines if ln]
+
+        current = None
+        for line in lines:
+            lline = line.lower()
+            if "inclusion criteria" in lline:
+                current = "inclusion"
+                continue
+            if "exclusion criteria" in lline:
+                current = "exclusion"
+                continue
+            if current is None:
+                continue
+
+            if line.startswith(("*", "-", "•")):
+                item = re.sub(r'^[*\-•]\s*', '', line).strip()
+                if item:
+                    result[current].append(item)
+            else:
+                # continuation line
+                if result[current]:
+                    result[current][-1] = f"{result[current][-1]} {line}".strip()
+                else:
+                    result[current].append(line)
+
+        return result
+
+    def _eligibility_item_change_rows(
+        self,
+        nct_id: str,
+        version: str,
+        old_text: str,
+        new_text: str,
+    ) -> List[Dict]:
+        """Compare eligibility one item at a time (one CSV row per eligibility item)."""
+        rows: List[Dict] = []
+        old_sec = self._parse_eligibility_sections(old_text)
+        new_sec = self._parse_eligibility_sections(new_text)
+
+        for section in ("inclusion", "exclusion"):
+            field_name = f"eligibility.{section}"
+            old_items = old_sec.get(section, [])
+            new_items = new_sec.get(section, [])
+
+            used_new = set()
+            old_unmatched = []
+
+            # exact same item => unchanged
+            for i, old_item in enumerate(old_items):
+                found = None
+                for j, new_item in enumerate(new_items):
+                    if j in used_new:
+                        continue
+                    if old_item == new_item:
+                        found = j
+                        break
+                if found is not None:
+                    used_new.add(found)
+                else:
+                    old_unmatched.append((i, old_item))
+
+            # fuzzy pairing => change
+            matched_old = set()
+            matched_new = set()
+            for oi, old_item in old_unmatched:
+                best_j = None
+                best_score = 0.0
+                for j, new_item in enumerate(new_items):
+                    if j in used_new or j in matched_new:
+                        continue
+                    score = difflib.SequenceMatcher(None, old_item, new_item).ratio()
+                    if score > best_score:
+                        best_score = score
+                        best_j = j
+                if best_j is not None and best_score >= 0.72:
+                    if self._has_meaningful_word_change(old_item, new_items[best_j]):
+                        rows.append({
+                            "nct_id": nct_id,
+                            "version": version,
+                            "field_name": field_name,
+                            "old": self._truncate(old_item, 400),
+                            "new": self._truncate(new_items[best_j], 400),
+                            "change_category": "change",
+                        })
+                    matched_old.add(oi)
+                    matched_new.add(best_j)
+
+            # removed
+            for oi, old_item in old_unmatched:
+                if oi in matched_old:
+                    continue
+                rows.append({
+                    "nct_id": nct_id,
+                    "version": version,
+                    "field_name": field_name,
+                    "old": self._truncate(old_item, 400),
+                    "new": "",
+                    "change_category": "removed",
+                })
+
+            # added
+            for j, new_item in enumerate(new_items):
+                if j in used_new or j in matched_new:
+                    continue
+                rows.append({
+                    "nct_id": nct_id,
+                    "version": version,
+                    "field_name": field_name,
+                    "old": "",
+                    "new": self._truncate(new_item, 400),
+                    "change_category": "added",
+                })
+
+        return rows
+
+    def _outcome_item_rows(
+        self,
+        nct_id: str,
+        version: str,
+        field_name: str,
+        old_value: Any,
+        new_value: Any,
+        effective_status: str,
+    ) -> List[Dict]:
+        """Emit one row per outcome item for primary/secondary outcomes."""
+        old_items = self._extract_outcome_items_for_table(old_value, field_name)
+        new_items = self._extract_outcome_items_for_table(new_value, field_name)
+        rows: List[Dict] = []
+
+        if effective_status == ChangeType.ADDED.value:
+            for item in new_items:
+                rows.append({
+                    'nct_id': nct_id,
+                    'version': version,
+                    'field_name': field_name,
+                    'old': "",
+                    'new': item,
+                    'change_category': 'added'
+                })
+            return rows
+
+        if effective_status == ChangeType.REMOVED.value:
+            for item in old_items:
+                rows.append({
+                    'nct_id': nct_id,
+                    'version': version,
+                    'field_name': field_name,
+                    'old': item,
+                    'new': "",
+                    'change_category': 'removed'
+                })
+            return rows
+
+        if effective_status == ChangeType.MODIFIED.value and (old_items or new_items):
+            max_len = max(len(old_items), len(new_items))
+            for i in range(max_len):
+                old_item = old_items[i] if i < len(old_items) else ""
+                new_item = new_items[i] if i < len(new_items) else ""
+                if old_item == new_item:
+                    continue
+                rows.append({
+                    'nct_id': nct_id,
+                    'version': version,
+                    'field_name': field_name,
+                    'old': old_item,
+                    'new': new_item,
+                    'change_category': 'change'
+                })
+            return rows
+
+        return rows
+
+    def _extract_outcome_items_for_table(self, value: Any, field_name: str) -> List[str]:
+        """Extract displayable per-outcome text rows from various outcome payload shapes."""
+        items = self._coerce_outcome_items(value)
+        out: List[str] = []
+        target = "primary" if field_name == "primaryOutcomes" else "secondary"
+
+        for item in items:
+            if isinstance(item, dict):
+                ordinal = str(item.get('ordinal', '')).strip().lower()
+                if ordinal and target not in ordinal:
+                    continue
+                rendered = self._format_value(self._sanitize_outcome_for_display(item)).strip()
+                if rendered and rendered not in ("[]", "{}"):
+                    out.append(rendered)
+            else:
+                rendered = self._format_value(item).strip()
+                if rendered and rendered not in ("[]", "{}"):
+                    out.append(rendered)
+
+        return out
+
+    def _coerce_outcome_items(self, value: Any) -> List[Any]:
+        """
+        Coerce outcomes value to a flat list of outcome-like items.
+
+        Supports malformed shapes like:
+        [{"measure": "[{...}, {...}]"}]
+        """
+        if value is None:
+            return []
+        if isinstance(value, list):
+            source = value
+        elif isinstance(value, dict):
+            source = [value]
+        elif isinstance(value, str):
+            parsed = self._try_parse_json(value)
+            if isinstance(parsed, list):
+                source = parsed
+            elif isinstance(parsed, dict):
+                source = [parsed]
+            else:
+                return [value]
+        else:
+            return [value]
+
+        flattened: List[Any] = []
+        for item in source:
+            if (
+                isinstance(item, dict)
+                and isinstance(item.get('measure'), str)
+            ):
+                parsed_measure = self._try_parse_json(item.get('measure', ''))
+                if isinstance(parsed_measure, list):
+                    flattened.extend(parsed_measure)
+                    continue
+            flattened.append(item)
+        return flattened
+
+    def _try_parse_json(self, text: str) -> Any:
+        """Best-effort JSON parsing with light quote/escape normalization."""
+        raw = (text or "").strip()
+        if not raw:
+            return None
+        candidates = [raw]
+        if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in ("'", '"'):
+            candidates.append(raw[1:-1])
+        candidates.append(raw.replace('\\"', '"'))
+        for c in candidates:
+            try:
+                return json.loads(c)
+            except Exception:
+                continue
+        return None
+
+    def _sanitize_outcome_for_display(self, outcome: Dict[str, Any]) -> Dict[str, Any]:
+        """Remove internal bookkeeping fields from outcome rows shown in CSV."""
+        if not isinstance(outcome, dict):
+            return {}
+        internal_keys = {'normalized_measure', 'status', 'previous_value'}
+        return {k: v for k, v in outcome.items() if k not in internal_keys}
     
     def _format_value(self, value: Any) -> str:
         """Format a value for display in the changes table."""
         if value is None:
             return ""
         if isinstance(value, dict):
-            # For location-like entities, create readable string
-            if 'city' in value:
-                parts = [value.get('city', ''), value.get('state', ''), value.get('country', '')]
-                return ', '.join(p for p in parts if p)
-            elif 'name' in value:
-                return value.get('name', '')
-            else:
-                return str(value)[:100]
+            return self._truncate(json.dumps(value, ensure_ascii=False, sort_keys=True), 400)
         elif isinstance(value, list):
-            return f"[{len(value)} items]"
+            return self._truncate(json.dumps(value, ensure_ascii=False), 400)
         else:
-            return self._truncate(str(value), 100)
+            return self._truncate(str(value), 400)
+
+    def _is_display_empty(self, value: Any) -> bool:
+        """
+        Check if a rendered table cell should be treated as empty.
+
+        Besides empty strings, also treats textual empty containers like [] as no value.
+        """
+        if value is None:
+            return True
+        if isinstance(value, (list, dict, tuple, set)) and len(value) == 0:
+            return True
+        text = str(value).strip()
+        if not text:
+            return True
+        if text in {"[]", "{}", "null", "None"}:
+            return True
+
+        # Accept whitespace/quote variants such as "[ ]", "'[]'", "\"{}\"".
+        compact = re.sub(r"\s+", "", text)
+        if compact in {"[]", "{}", "null", "None", "'[]'", "'{}'", "\"[]\"", "\"{}\""}:
+            return True
+
+        # Handle JSON-encoded strings and empty containers.
+        try:
+            parsed = json.loads(text)
+            if parsed in (None, "", [], {}):
+                return True
+            if isinstance(parsed, str):
+                parsed_compact = re.sub(r"\s+", "", parsed)
+                if parsed_compact in {"[]", "{}", "null", "None"}:
+                    return True
+        except Exception:
+            pass
+
+        return False
     
     def _truncate(self, text: str, max_len: int = 100) -> str:
         """Truncate text to max length with ellipsis."""
         if not text:
             return ""
+        if max_len <= 0:
+            return ""
         if len(text) <= max_len:
             return text
-        return text[:max_len-3] + "..."
+        if max_len <= 3:
+            return text[:max_len]
+        return text[:max_len - 3] + "..."
     
     def export_changes_table_csv(
         self, 
@@ -2329,7 +2948,10 @@ class Task7DynamicCTKG(BaseTaskHandler):
             return
         
         with open(output_path, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, fieldnames=['nct_id', 'version', 'field', 'old_value', 'new_value', 'change_type'])
+            writer = csv.DictWriter(
+                f,
+                fieldnames=['nct_id', 'version', 'field_name', 'old', 'new', 'change_category']
+            )
             writer.writeheader()
             writer.writerows(changes)
         

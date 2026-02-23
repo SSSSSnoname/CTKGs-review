@@ -1,218 +1,158 @@
 # CTKG Construction Agent
 
-A modular AI agent that converts ClinicalTrials.gov records into structured Clinical Trial Knowledge Graphs (CTKGs).
+This module builds a **Clinical Trial Knowledge Graphs (CTKGs)** from ClinicalTrials.gov records.
+It is designed for reproducible extraction of trial-level and intervention-level triples, and is the construction backend used in this repository.
 
-## Overview
+## What This Repository Part Does
 
-The CTKG Construction Agent is designed to automatically extract, standardize, and structure clinical trial information from ClinicalTrials.gov into knowledge graph triples. It uses GPT-5 as the controller to orchestrate 9 modular tasks.
+Given one NCT trial record, the pipeline:
 
-## Architecture
+1. standardizes outcomes,
+2. profiles interventions and arm structure,
+3. structures eligibility criteria,
+4. infers purpose relations,
+5. extracts statistical comparative conclusions,
+6. maps significant findings to disease-level effects,
+7. captures longitudinal protocol changes,
+8. assembles all outputs into final CTKG triples.
 
-```
+The resulting graph is split into:
+
+- `trial_centric_triples`: trial-level facts (`head == NCT_ID`)
+- `intervention_centric_triples`: group/intervention-level facts (`head != NCT_ID`)
+
+## Directory Structure
+
+```text
 agents/construction/
-├── ctkg_agent.py          # Main agent class and orchestration
-├── __init__.py            # Package exports
-├── data_loader/           # Data loading utilities
-│   ├── ctgov_api.py       # ClinicalTrials.gov API client
-│   ├── cthist_downloader.py  # Version history downloader (R integration)
-│   ├── download_version_history.R  # R script for cthist
-│   └── file_loader.py     # Local file loading
-└── tasks/                 # Individual task implementations
-    ├── base.py            # Base task handler class
-    ├── task1_outcome.py   # Outcome standardization
-    ├── task2_intervention.py  # Intervention profiling
-    ├── task3_eligibility.py   # Eligibility structuring
-    ├── task4_purpose.py   # Purpose inference
-    ├── task5_statistical.py   # Statistical conclusions
-    ├── task6_disease.py   # Disease mapping
-    ├── task7_dynamic.py   # Dynamic CTKG (version tracking)
-    ├── task8_assembly.py  # CTKG assembly
-    └── task9_linking.py   # Entity linking
+├── ctkg_agent.py
+├── TASK_IO_SPEC.md                 # full field-level I/O spec
+├── output/                         # user-facing outputs
+├── cache/                          # reusable intermediate cache
+├── debug/                          # step-by-step debug artifacts
+└── tasks/
+    ├── task1_outcome.py
+    ├── task2_intervention.py
+    ├── task3_eligibility.py
+    ├── task4_purpose.py
+    ├── task5_statistical.py
+    ├── task6_disease.py
+    ├── task7_dynamic.py
+    ├── task8_assembly.py
+    └── task9_linking.py
 ```
-
-## Tasks
-
-| Task | Name | Description |
-|------|------|-------------|
-| Task 1 | Outcome Standardization | Decompose outcome measures into core indicators and attributes |
-| Task 2 | Intervention Profiling | Extract intervention details (dosage, route, frequency, etc.) |
-| Task 3 | Eligibility Structuring | Structure eligibility criteria (conditions, medications, pregnancy) |
-| Task 4 | Purpose Inference | Infer intervention-disease relationships and study purpose |
-| Task 5 | Statistical Conclusions | Extract statistical analysis conclusions and effect directions |
-| Task 6 | Disease Mapping | Map outcome-level findings to disease-level effects |
-| Task 7 | Dynamic CTKG | Track protocol version change history |
-| Task 8 | CTKG Assembly | Assemble complete knowledge graph triples |
-| Task 9 | Entity Linking | Link entities to standard ontologies (UMLS, etc.) |
 
 ## Quick Start
 
-### 1. Installation
+### Requirements
+
+- Python 3.10+
+- `OPENAI_API_KEY` set in environment
+
+### Install
 
 ```bash
 pip install openai requests
 ```
 
-### 2. Basic Usage
+### Minimal end-to-end example
 
 ```python
-from agents.construction import CTKGConstructionAgent, create_agent
+from agents.construction import create_agent, TaskType
 
-# Create agent
-agent = create_agent(api_key="your-openai-api-key")
+nct_id = "NCT02119676"
+agent = create_agent(model="gpt-5-mini")
 
-# Load trial from API
-trial_data = agent.load_trial_from_api("NCT02119676")
+agent.load_trial_from_api(nct_id)
 
-# Generate trial-centric CTKG
-triples = agent.generate_trial_centric_ctkg("NCT02119676")
-
-# Export to JSON
-agent.export_ctkg(triples, "output.json")
-```
-
-### 3. Using the Pipeline
-
-```python
-from agents.construction import CTKGConstructionAgent, TaskType, CTKGType
-
-agent = CTKGConstructionAgent(api_key="your-api-key")
-agent.load_trial_from_api("NCT02119676")
-
-# Execute all tasks for trial-centric CTKG
-results = agent.execute_pipeline("NCT02119676", ctkg_type=CTKGType.TRIAL_CENTRIC)
-
-# Or execute specific tasks
-results = agent.execute_pipeline("NCT02119676", tasks=[
+# Run tasks 1-8 in order (recommended for reproducibility)
+for task in [
     TaskType.TASK1_OUTCOME_STANDARDIZATION,
     TaskType.TASK2_INTERVENTION_PROFILING,
-    TaskType.TASK3_ELIGIBILITY_STRUCTURING
-])
+    TaskType.TASK3_ELIGIBILITY_STRUCTURING,
+    TaskType.TASK4_PURPOSE_INFERENCE,
+    TaskType.TASK5_STATISTICAL_CONCLUSIONS,
+    TaskType.TASK6_DISEASE_MAPPING,
+    TaskType.TASK7_DYNAMIC_CTKG,
+    TaskType.TASK8_CTKG_ASSEMBLY,
+]:
+    agent.execute_task(nct_id, task)
 ```
 
-## CTKG Types
+Generated user-facing outputs are written to:
 
-The agent can generate three types of knowledge graphs:
-
-### 1. Trial-Centric CTKG
-Focus on trial metadata and design:
-- Phase, status, conditions
-- Interventions and arm groups
-- Eligibility criteria
-- Outcomes and adverse events
-
-### 2. Intervention-Centric CTKG
-Focus on intervention-outcome relationships:
-- Statistical conclusions
-- Effect directions
-- Disease-level mappings
-
-### 3. Dynamic CTKG
-Focus on protocol changes over time:
-- Version history
-- Field-level changes
-- Change status tracking (added/removed/modified)
-
-## Output Format
-
-### Triple Structure
-
-```json
-{
-  "head": "NCT02119676",
-  "relation": "hasIntervention",
-  "tail": "Ruxolitinib",
-  "head_type": "Trial",
-  "tail_type": "Drug",
-  "attributes": {
-    "dosage": "5 mg",
-    "frequency": "twice daily",
-    "route": "oral"
-  },
-  "provenance": {
-    "task": "task2",
-    "source": "resultsSection"
-  }
-}
+```text
+agents/construction/output/<NCT_ID>/<NCT_ID>_<task_name>.json
 ```
 
-### Relation Types
+## Task Overview (1-8)
 
-| Category | Relations |
-|----------|-----------|
-| Trial Structure | `hasPhase`, `hasStatus`, `hasCondition`, `hasIntervention`, `hasOutcome` |
-| Eligibility | `includes_condition`, `excludes_condition`, `includes_medication`, `excludes_medication` |
-| Intervention | `treat`, `improve`, `decrease`, `increase`, `co_treat`, `composite` |
-| Statistical | `outperforms`, `comparable_to`, `non_inferior_to` |
-| Adverse Events | `hasSeriousAdverseEvent`, `hasOtherAdverseEvent`, `belongsToOrganSystem` |
-| Baseline | `hasFemale`, `hasMale`, `hasAge_Continuous` |
+- `Task1` Outcome standardization
+  - one record per standardized outcome core:
+    - `original_title`, `core_measurement`, `attributes`
 
-## API Reference
+- `Task2` Intervention profiling
+  - structured arm/group interventions
+  - `co_treat_relations` and `composite_relations`
+  - entity attributes are explicit (`head_attributes`, `tail_attributes`)
 
-### CTKGConstructionAgent
+- `Task3` Eligibility structuring
+  - normalized `entity_qualifiers`
+  - eligibility triples in `structured_eligibility.kg_triples`
 
-```python
-class CTKGConstructionAgent:
-    def __init__(self, llm_client=None, api_key=None, model="gpt-5", cache_dir=None):
-        """Initialize the CTKG Construction Agent."""
-    
-    def load_trial_from_api(self, nct_id: str) -> TrialData:
-        """Download trial data from ClinicalTrials.gov API."""
-    
-    def load_trial_from_file(self, file_path, nct_id: str) -> TrialData:
-        """Load trial data from local JSON file."""
-    
-    def execute_task(self, nct_id: str, task_type: TaskType, **kwargs) -> TaskResult:
-        """Execute a single task for a given trial."""
-    
-    def execute_pipeline(self, nct_id: str, tasks=None, ctkg_type=CTKGType.TRIAL_CENTRIC) -> Dict:
-        """Execute a pipeline of tasks."""
-    
-    def generate_trial_centric_ctkg(self, nct_id: str) -> List[CTKGTriple]:
-        """Generate trial-centric CTKG."""
-    
-    def generate_intervention_centric_ctkg(self, nct_id: str) -> List[CTKGTriple]:
-        """Generate intervention-centric CTKG."""
-    
-    def generate_dynamic_ctkg(self, nct_id: str) -> List[CTKGTriple]:
-        """Generate dynamic CTKG with version tracking."""
-    
-    def export_ctkg(self, triples, output_path, format="json"):
-        """Export CTKG to file."""
-```
+- `Task4` Purpose inference
+  - purpose relation inference + `kg_triples`
 
-## Task Dependencies
+- `Task5` Statistical conclusions
+  - comparative statistical triples in two-head schema (`kg_triples`)
 
-```
-Task 1 (Outcome) ─────┬─────> Task 5 (Statistical) ───> Task 6 (Disease)
-Task 2 (Intervention) ─┘
-Task 3 (Eligibility) ─────> (standalone)
-Task 4 (Purpose) ─────────> (standalone)
-Task 7 (Dynamic) ─────────> (standalone)
-Task 8 (Assembly) <────────── Task 1, 2, 3, 4, 5, 6
-Task 9 (Linking) <────────── Task 8
-```
+- `Task6` Disease mapping
+  - disease-level relation triples derived from Task5 significant evidence
 
-## Configuration
+- `Task7` Dynamic CTKG
+  - version-to-version change extraction, plus CSV change table export
 
-### Environment Variables
+- `Task8` CTKG assembly
+  - merges Task1-7 outputs into final `trial_centric_triples` and `intervention_centric_triples`
 
-```bash
-export OPENAI_API_KEY="your-api-key"
-```
+## Task8 Merge Policy (Current)
 
-### Model Options
+### Bucketing
 
-- `gpt-5` (default) - Best quality
-- `gpt-5-mini` - Faster, slightly lower quality
+- `head == NCT_ID` -> trial level
+- `head != NCT_ID` -> intervention level
 
-## Notes
+### Inputs merged by Task8
 
-1. **API Costs**: Each trial requires approximately 10-20 LLM calls
-2. **Processing Time**: Single trial takes about 25-60 seconds
-3. **Result Quality**: Depends on the completeness of ClinicalTrials.gov data
-4. **Version History**: Task 7 requires R with `cthist` package installed
+- Trial level:
+  - native trial metadata triples
+  - Task3 `kg_triples` (raw passthrough)
+  - Task4 `kg_triples` (raw passthrough)
 
-## Related Modules
+- Intervention level:
+  - Task2 `co_treat_relations` and `composite_relations` (raw passthrough)
+  - Task5 `kg_triples` (raw passthrough)
+  - Task6 `kg_triples` (raw passthrough)
 
-- `agents/visualization/` - CTKG visualization utilities
-- `examples/ctkg_agent_demo/` - Demo scripts and example outputs
+### Output
+
+- Main file:
+  - `agents/construction/output/<NCT_ID>/<NCT_ID>_task8_ctkg_assembly.json`
+
+
+## Output Locations
+
+- User-facing outputs:
+  - `agents/construction/output/<NCT_ID>/...`
+- Reuse cache:
+  - `cache/<NCT_ID>/...`
+- Debug artifacts:
+  - `agents/construction/debug/...`
+
+## Documentation
+
+For exact runtime field definitions for every task, use:
+
+- `agents/construction/TASK_IO_SPEC.md`
+
+This README is a usage and orientation guide. `TASK_IO_SPEC.md` is the strict schema reference.

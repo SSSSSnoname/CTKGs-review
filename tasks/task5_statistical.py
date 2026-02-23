@@ -514,7 +514,8 @@ class Task5StatisticalConclusions(BaseTaskHandler):
             
             # Generate knowledge graph triples
             nct_id = trial_data.nct_id
-            kg_triples = self._generate_kg_triples(nct_id, conclusions)
+            task_results = kwargs.get('task_results', {})
+            kg_triples = self._generate_kg_triples(nct_id, conclusions, task_results)
             
             return self._create_success_result({
                 'conclusions': conclusions,
@@ -530,7 +531,7 @@ class Task5StatisticalConclusions(BaseTaskHandler):
             logger.error(f"Task 5 failed: {e}")
             return self._create_error_result([str(e)])
     
-    def _generate_kg_triples(self, nct_id: str, conclusions: List[Dict]) -> List[Dict]:
+    def _generate_kg_triples(self, nct_id: str, conclusions: List[Dict], task_results: Dict = None) -> List[Dict]:
         """
         Generate knowledge graph triples from statistical conclusions.
         
@@ -547,19 +548,28 @@ class Task5StatisticalConclusions(BaseTaskHandler):
         """
         triples = []
         
+        task_results = task_results or {}
+        task2_group_map = self._build_task2_group_map(task_results)
+        task1_outcome_map = self._build_task1_outcome_map(task_results)
+
         for conclusion in conclusions:
             triplet = conclusion.get('triplet', {})
-            is_significant = conclusion.get('is_statistically_significant', False)
+            is_significant = conclusion.get(
+                'is_statistically_significant',
+                conclusion.get('statistical_significance', False)
+            )
             p_value = conclusion.get('p_value')
             
-            intervention = triplet.get('head_entity_name', '')
-            comparator = triplet.get('head_entity_2_name', '')
+            head_group_id_raw = triplet.get('head_entity_id', '')
+            comparator_group_id_raw = triplet.get('head_entity_2_id', '')
             outcome = triplet.get('tail_entity_original', '')
-            relation = triplet.get('comparative_relation', '')
             context = triplet.get('relationship_context', '')
             
-            if not intervention or not outcome:
+            if not head_group_id_raw or not outcome:
                 continue
+
+            head_group_id = self._normalize_group_id(nct_id, head_group_id_raw)
+            comparator_group_id = self._normalize_group_id(nct_id, comparator_group_id_raw) if comparator_group_id_raw else None
             
             # Determine relation type based on context and significance
             if is_significant:
@@ -575,39 +585,81 @@ class Task5StatisticalConclusions(BaseTaskHandler):
                     relation_type = 'affectsOutcome'
             else:
                 relation_type = 'noSignificantEffect'
-            
-            # Main intervention-outcome triple
+
+            # Group values for human verification
+            group_values = {}
+            for g in conclusion.get('groups', []):
+                gid = self._normalize_group_id(nct_id, g.get('group_id', ''))
+                if not gid:
+                    continue
+                group_values[gid] = {
+                    'group_title': g.get('group_title'),
+                    'values': g.get('values', [])
+                }
+
+            # Main group-outcome triple
+            tail_attrs = task1_outcome_map.get(outcome, [])
+            if tail_attrs and isinstance(tail_attrs, list):
+                core_measurement = tail_attrs[0].get('core_measurement')
+            else:
+                core_measurement = None
+            tail_value = core_measurement or outcome
+
             triples.append({
-                'head': intervention,
-                'relation': relation_type,
-                'tail': outcome,
-                'head_type': 'Intervention',
+                'head_entity_1': head_group_id,
+                'head_entity_2': comparator_group_id,
+                'relation': {
+                    'comparative_relation': triplet.get('comparative_relation'),
+                    'context': context[:200] if context else None
+                },
+                'tail': tail_value,
+                'head_entity_1_type': 'Group',
+                'head_entity_2_type': 'Group' if comparator_group_id else None,
                 'tail_type': 'Outcome',
-                'attributes': {
+                'head_entity_1_attributes': task2_group_map.get(head_group_id),
+                'head_entity_2_attributes': task2_group_map.get(comparator_group_id) if comparator_group_id else None,
+                'tail_attributes': tail_attrs,
+                'relation_attributes': {
                     'is_significant': is_significant,
                     'p_value': p_value,
-                    'comparator': comparator if comparator else None,
-                    'context': context[:200] if context else None
+                    'statistical_conclusion': conclusion.get('statistical_conclusion'),
+                    'statistical_analysis': conclusion.get('statistical_analysis', {}),
+                    'group_values': group_values
                 },
                 'provenance': {'nct_id': nct_id}
             })
-            
-            # Comparison triple if there's a comparator
-            if comparator and comparator != intervention:
-                triples.append({
-                    'head': intervention,
-                    'relation': 'comparedTo',
-                    'tail': comparator,
-                    'head_type': 'Intervention',
-                    'tail_type': 'Intervention',
-                    'attributes': {
-                        'outcome': outcome,
-                        'result': 'significant' if is_significant else 'not_significant'
-                    },
-                    'provenance': {'nct_id': nct_id}
-                })
         
         return triples
+
+    def _normalize_group_id(self, nct_id: str, group_id: str) -> str:
+        """Convert OG000/BG000/... to NCTID_000."""
+        if not group_id:
+            return ""
+        m = re.match(r'[A-Z]{1,2}(\d+)', str(group_id))
+        if m:
+            return f"{nct_id}_{m.group(1)}"
+        return str(group_id)
+
+    def _build_task2_group_map(self, task_results: Dict) -> Dict:
+        """Map normalized group_id -> full Task2 group object."""
+        group_map = {}
+        task2 = task_results.get('task2_intervention_profiling', {})
+        for g in task2.get('profiled_interventions', []) or []:
+            gid = g.get('group_id')
+            if gid:
+                group_map[gid] = g
+        return group_map
+
+    def _build_task1_outcome_map(self, task_results: Dict) -> Dict:
+        """Map outcome original_title -> Task1 standardized output list."""
+        outcome_map = {}
+        task1 = task_results.get('task1_outcome_standardization', {})
+        for o in task1.get('standardized_outcomes', []) or []:
+            title = o.get('original_title')
+            if not title:
+                continue
+            outcome_map.setdefault(title, []).append(o)
+        return outcome_map
     
     def prepare_input(self, trial_data: Any) -> Dict:
         """
@@ -749,10 +801,12 @@ class Task5StatisticalConclusions(BaseTaskHandler):
             'triplet': result1.get('triplet', {}),
             'logic_trace': result1.get('logic_trace', {}),
             'statistical_significance': result2.get('is_statistically_significant'),
+            'is_statistically_significant': result2.get('is_statistically_significant'),
             'statistical_conclusion': result2.get('statistical_conclusion'),
             'group_ids': group_ids,
-            'p_value': analysis.get('statistical_analysis', {}).get('pValue')
+            'p_value': analysis.get('statistical_analysis', {}).get('pValue'),
+            'statistical_analysis': analysis.get('statistical_analysis', {}),
+            'groups': groups,
         }
         
         return conclusion
-

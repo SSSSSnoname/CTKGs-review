@@ -39,15 +39,17 @@ class KGTriple:
     provenance: Dict = field(default_factory=dict)
     
     def to_dict(self) -> Dict:
-        return {
+        data = {
             'head': self.head,
             'relation': self.relation,
             'tail': self.tail,
             'head_type': self.head_type,
-            'tail_type': self.tail_type,
-            'attributes': self.attributes,
-            'provenance': self.provenance
+            'tail_type': self.tail_type
         }
+        if self.attributes:
+            data['tail_attributes'] = self.attributes
+        data['provenance'] = self.provenance
+        return data
 
 
 @dataclass
@@ -148,6 +150,7 @@ class Task8CTKGAssembly(BaseTaskHandler):
                     task_results
                 )
                 trial_centric_triples = trial_centric_ctkg.triples
+                self._ensure_provenance_nct_id(trial_centric_triples, nct_id)
                 
                 # Integrate Task 7 dynamic CTKG if available
                 if include_dynamic:
@@ -156,27 +159,118 @@ class Task8CTKGAssembly(BaseTaskHandler):
                         task_results
                     )
                     dynamic_ctkg_triples = dynamic_data.get('triples', [])
+                    self._ensure_provenance_nct_id_in_dicts(dynamic_ctkg_triples, nct_id)
             
             # Build intervention-centric CTKG
+            raw_task2_relations = []
+            raw_task56_triples = []
             if ctkg_type in ["intervention_centric", "both"]:
-                intervention_centric_triples = self._build_intervention_centric(
-                    trial_data,
-                    task_results
-                )
+                # Keep Task2/Task5/Task6 relations in original schema (no rewriting).
+                raw_task2_relations = self._get_task2_raw_relations(task_results)
+                raw_task56_triples = self._get_task56_raw_triples(task_results)
+
+            # Re-bucket by head-level rule:
+            # - head == NCTID => trial-level
+            # - head starts with NCTID_ => intervention-level (group-level)
+            trial_centric_triples, intervention_centric_triples = self._rebucket_by_head_level(
+                nct_id,
+                trial_centric_triples,
+                intervention_centric_triples,
+            )
             
+            intervention_output = (
+                [t.to_dict() for t in intervention_centric_triples] +
+                raw_task2_relations +
+                raw_task56_triples
+            )
+
             return self._create_success_result({
-                'trial_centric_ctkg': trial_centric_ctkg.to_dict() if trial_centric_ctkg else None,
+                'trial_centric_ctkg': (
+                    {
+                        'triples': [t.to_dict() for t in trial_centric_triples],
+                        'version_history': trial_centric_ctkg.version_history if trial_centric_ctkg else {}
+                    } if trial_centric_ctkg else None
+                ),
                 'trial_centric_triples': [t.to_dict() for t in trial_centric_triples],
-                'intervention_centric_triples': [t.to_dict() for t in intervention_centric_triples],
+                'intervention_centric_triples': intervention_output,
                 'dynamic_ctkg_triples': dynamic_ctkg_triples,
                 'total_trial_centric': len(trial_centric_triples),
-                'total_intervention_centric': len(intervention_centric_triples),
+                'total_intervention_centric': len(intervention_output),
                 'total_dynamic': len(dynamic_ctkg_triples)
             })
             
         except Exception as e:
             logger.error(f"Task 8 failed: {e}")
             return self._create_error_result([str(e)])
+
+    def _rebucket_by_head_level(
+        self,
+        nct_id: str,
+        trial_triples: List[KGTriple],
+        intervention_triples: List[KGTriple],
+    ) -> (List[KGTriple], List[KGTriple]):
+        """
+        Reassign triples based on head ID semantics.
+
+        Rule:
+        - Trial-level: head == nct_id
+        - Intervention-level: head starts with f"{nct_id}_"
+        - Others: intervention-level
+        """
+        merged = (trial_triples or []) + (intervention_triples or [])
+        out_trial: List[KGTriple] = []
+        out_intervention: List[KGTriple] = []
+        seen = set()
+
+        for t in merged:
+            key = (
+                t.head,
+                t.relation,
+                t.tail,
+                json.dumps(t.attributes or {}, sort_keys=True, ensure_ascii=False),
+                json.dumps(t.provenance or {}, sort_keys=True, ensure_ascii=False),
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+
+            if t.head == nct_id:
+                out_trial.append(t)
+            else:
+                out_intervention.append(t)
+
+        return out_trial, out_intervention
+
+    def _ensure_provenance_nct_id(self, triples: List[KGTriple], nct_id: str) -> None:
+        """Ensure every KGTriple carries provenance.nct_id."""
+        for t in triples:
+            if not isinstance(t.provenance, dict):
+                t.provenance = {}
+            t.provenance.setdefault('nct_id', nct_id)
+
+    def _ensure_provenance_nct_id_in_dicts(self, triples: List[Dict], nct_id: str) -> None:
+        """Ensure every dict triple carries provenance.nct_id and provenance is last key."""
+        for i, t in enumerate(triples):
+            if not isinstance(t, dict):
+                continue
+            prov = t.get('provenance')
+            if not isinstance(prov, dict):
+                prov = {}
+            prov.setdefault('nct_id', nct_id)
+
+            rebuilt = {
+                'head': t.get('head', ''),
+                'relation': t.get('relation', ''),
+                'tail': t.get('tail', ''),
+                'head_type': t.get('head_type', ''),
+                'tail_type': t.get('tail_type', '')
+            }
+            if 'tail_attributes' in t and t.get('tail_attributes'):
+                rebuilt['tail_attributes'] = t.get('tail_attributes')
+            elif 'attributes' in t and t.get('attributes'):
+                rebuilt['tail_attributes'] = t.get('attributes')
+            rebuilt['provenance'] = prov
+            triples[i] = rebuilt
     
     def prepare_input(self, trial_data: Any) -> Dict:
         """Prepare trial data for assembly."""
@@ -460,18 +554,39 @@ class Task8CTKGAssembly(BaseTaskHandler):
         """
         task1 = task_results.get('task1_outcome_standardization', {})
         standardized_list = task1.get('standardized_outcomes', [])
-        
+
         # Build lookup for Task 1 results by original title
         standardized_lookup = {}
         for outcome in standardized_list:
             title = outcome.get('original_title', '')
-            standardized_lookup[title] = {
-                'standardized': outcome.get('standardized', []),
-                'core_measurements': [
-                    s.get('core_measurement') for s in outcome.get('standardized', [])
-                    if s.get('core_measurement')
-                ]
-            }
+            if not title:
+                continue
+
+            # Legacy Task1 format (one record per title with nested standardized list)
+            if isinstance(outcome.get('standardized'), list):
+                standardized_lookup[title] = {
+                    'standardized': outcome.get('standardized', []),
+                    'core_measurements': [
+                        s.get('core_measurement') for s in outcome.get('standardized', [])
+                        if isinstance(s, dict) and s.get('core_measurement')
+                    ]
+                }
+                continue
+
+            # New Task1 format (one record per core measurement with attributes)
+            if title not in standardized_lookup:
+                standardized_lookup[title] = {'standardized': [], 'core_measurements': []}
+
+            core = outcome.get('core_measurement')
+            attrs = outcome.get('attributes', {}) or {}
+            standardized_lookup[title]['standardized'].append({
+                'core_measurement': core,
+                'measurement_tool': attrs.get('measurement_tool'),
+                'value_condition': attrs.get('value_condition'),
+                'conditional_population': attrs.get('conditional_population')
+            })
+            if core:
+                standardized_lookup[title]['core_measurements'].append(core)
         
         outcome_dict = {}
         
@@ -598,16 +713,10 @@ class Task8CTKGAssembly(BaseTaskHandler):
         triples.extend(self._add_intervention_triples_from_structured(nct_id, interventions))
         
         # Outcome triples (from structured data)
-        triples.extend(self._add_outcome_triples_from_structured(nct_id, outcomes))
+        triples.extend(self._add_outcome_triples_from_structured(nct_id, outcomes, task_results))
         
-        # Eligibility triples
-        triples.extend(self._add_eligibility_triples(nct_id, trial_data, eligibility))
-        
-        # Purpose triples
-        triples.extend(self._add_purpose_triples(nct_id, purpose))
-        
-        # Statistical conclusion triples
-        triples.extend(self._add_conclusion_triples(nct_id, conclusions))
+        # Merge Task3/4 kg triples from upstream task outputs.
+        triples.extend(self._add_task3456_kg_triples(task_results))
         
         # Baseline characteristics triples
         if baseline:
@@ -645,8 +754,8 @@ class Task8CTKGAssembly(BaseTaskHandler):
         triples = []
         
         for group_id, characteristics in baseline.items():
-            # Normalize group ID: BG000 -> Group_000
-            normalized_group = self._normalize_group_id(group_id)
+            # Normalize group ID: BG000 -> NCTID_000
+            normalized_group = self._normalize_group_id(group_id, nct_id=nct_id)
             
             for char in characteristics:
                 baseline_name = char.get('baseline', '')
@@ -760,21 +869,13 @@ class Task8CTKGAssembly(BaseTaskHandler):
                         continue
                     
                     if name:
+                        intervention_type = intervention.get('type')
                         triples.append(KGTriple(
                             head=nct_id,
                             relation="hasIntervention",
                             tail=name,
                             head_type="Trial",
-                            tail_type="Intervention",
-                            attributes={
-                                'group_id': self._normalize_group_id(group_id),
-                                'type': intervention.get('type'),
-                                'dosage': intervention.get('dosage'),
-                                'dosage_form': intervention.get('dosage_form'),
-                                'route': intervention.get('administration_route'),
-                                'frequency': intervention.get('frequency'),
-                                'duration': intervention.get('Treatment duration')
-                            }
+                            tail_type=self._map_intervention_tail_type(intervention_type)
                         ))
         
         # Fall back format
@@ -793,16 +894,73 @@ class Task8CTKGAssembly(BaseTaskHandler):
         return triples
     
     def _add_outcome_triples_from_structured(
-        self, 
-        nct_id: str, 
-        outcomes: Dict
+        self,
+        nct_id: str,
+        outcomes: Dict,
+        task_results: Optional[Dict] = None
     ) -> List[KGTriple]:
         """Add outcome triples from structured Task 1 output."""
         triples = []
+
+        # Prefer Task 1 standardized output directly:
+        # tail = standardized core_measurement
+        # tail_attributes = remaining Task 1 fields
+        task1 = (task_results or {}).get('task1_outcome_standardization', {})
+        standardized_outcomes = task1.get('standardized_outcomes', [])
+        if standardized_outcomes:
+            for item in standardized_outcomes:
+                core = item.get('core_measurement')
+                if not core:
+                    continue
+
+                attrs = dict(item.get('attributes') or {})
+                if item.get('original_title'):
+                    attrs['original_title'] = item.get('original_title')
+
+                triples.append(KGTriple(
+                    head=nct_id,
+                    relation="hasOutcome",
+                    tail=core,
+                    head_type="Trial",
+                    tail_type="Outcome",
+                    attributes=attrs
+                ))
+            return triples
         
         for outcome_type, type_outcomes in outcomes.items():
             for title, outcome_data in type_outcomes.items():
-                # Add original outcome
+                core_measurements = outcome_data.get('core_measurements', []) or []
+                standardized_entries = outcome_data.get('standardized', []) or []
+
+                # If standardized cores exist, emit one hasOutcome per core measurement
+                if core_measurements:
+                    for idx, core in enumerate(core_measurements):
+                        if not core:
+                            continue
+                        std_entry = standardized_entries[idx] if idx < len(standardized_entries) else {}
+                        attrs = {
+                            'original_title': title,
+                            'outcome_type': outcome_type,
+                            'measurement_tool': std_entry.get('measurement_tool') if isinstance(std_entry, dict) else None,
+                            'value_condition': std_entry.get('value_condition') if isinstance(std_entry, dict) else None,
+                            'conditional_population': std_entry.get('conditional_population') if isinstance(std_entry, dict) else None,
+                            'paramType': outcome_data.get('paramType'),
+                            'timeFrame': outcome_data.get('timeFrame'),
+                            'unitOfMeasure': outcome_data.get('unitOfMeasure'),
+                            'units': outcome_data.get('unitOfMeasure'),
+                            'description': outcome_data.get('description')
+                        }
+                        triples.append(KGTriple(
+                            head=nct_id,
+                            relation="hasOutcome",
+                            tail=core,
+                            head_type="Trial",
+                            tail_type="Outcome",
+                            attributes=attrs
+                        ))
+                    continue
+
+                # Last-resort fallback when no standardized core exists
                 triples.append(KGTriple(
                     head=nct_id,
                     relation="hasOutcome",
@@ -810,23 +968,18 @@ class Task8CTKGAssembly(BaseTaskHandler):
                     head_type="Trial",
                     tail_type="Outcome",
                     attributes={
+                        'original_title': title,
                         'outcome_type': outcome_type,
-                        'time_frame': outcome_data.get('time_frame') or outcome_data.get('timeFrame'),
-                        'unit': outcome_data.get('unit_of_measure') or outcome_data.get('unitOfMeasure')
+                        'measurement_tool': None,
+                        'value_condition': None,
+                        'conditional_population': None,
+                        'paramType': outcome_data.get('paramType'),
+                        'timeFrame': outcome_data.get('timeFrame'),
+                        'unitOfMeasure': outcome_data.get('unitOfMeasure'),
+                        'units': outcome_data.get('unitOfMeasure'),
+                        'description': outcome_data.get('description')
                     }
                 ))
-                
-                # Add standardized core measurements
-                for core in outcome_data.get('core_measurements', []):
-                    if core:
-                        triples.append(KGTriple(
-                            head=nct_id,
-                            relation="hasStandardizedOutcome",
-                            tail=core,
-                            head_type="Trial",
-                            tail_type="StandardizedOutcome",
-                            attributes={'original_title': title}
-                        ))
         
         return triples
     
@@ -883,6 +1036,78 @@ class Task8CTKGAssembly(BaseTaskHandler):
                 ))
         
         return triples
+
+    def _add_task3456_kg_triples(self, task_results: Dict) -> List[KGTriple]:
+        """
+        Merge Task3/4 kg_triples into Task8 trial-centric triples.
+
+        Task5/6 triples are merged into intervention_centric_triples.
+        """
+        triples: List[KGTriple] = []
+        seen = set()
+
+        def _append_hrt(src_triple: Dict, source: str) -> None:
+            if not isinstance(src_triple, dict):
+                return
+            head = src_triple.get("head")
+            rel = src_triple.get("relation")
+            tail = src_triple.get("tail")
+            if not head or not rel or tail is None or tail == "":
+                return
+            key = (str(head), str(rel), str(tail), source)
+            if key in seen:
+                return
+            seen.add(key)
+
+            attrs = src_triple.get("tail_attributes")
+            if attrs is None:
+                attrs = src_triple.get("attributes")
+            if not isinstance(attrs, dict):
+                attrs = {}
+            if source:
+                attrs = dict(attrs)
+                attrs.setdefault("source_task", source)
+
+            triples.append(KGTriple(
+                head=str(head),
+                relation=str(rel),
+                tail=str(tail),
+                head_type=src_triple.get("head_type", ""),
+                tail_type=src_triple.get("tail_type", ""),
+                attributes=attrs,
+                provenance=src_triple.get("provenance", {}) or {"source": source}
+            ))
+
+        # Task3: structured_eligibility.kg_triples (HRT)
+        task3 = task_results.get("task3_eligibility_structuring", {}) or {}
+        task3_kg = ((task3.get("structured_eligibility") or {}).get("kg_triples") or [])
+        for t in task3_kg:
+            _append_hrt(t, "task3_eligibility_structuring")
+
+        # Task4: inferred_purpose.kg_triples (HRT)
+        task4 = task_results.get("task4_purpose_inference", {}) or {}
+        task4_kg = ((task4.get("inferred_purpose") or {}).get("kg_triples") or [])
+        for t in task4_kg:
+            _append_hrt(t, "task4_purpose_inference")
+
+        return triples
+
+    def _get_task56_raw_triples(self, task_results: Dict) -> List[Dict]:
+        """Return Task5/Task6 kg_triples in original raw schema."""
+        raw: List[Dict] = []
+        task5 = task_results.get("task5_statistical_conclusions", {}) or {}
+        raw.extend([t for t in (task5.get("kg_triples") or []) if isinstance(t, dict)])
+        task6 = task_results.get("task6_disease_mapping", {}) or {}
+        raw.extend([t for t in (task6.get("kg_triples") or []) if isinstance(t, dict)])
+        return raw
+
+    def _get_task2_raw_relations(self, task_results: Dict) -> List[Dict]:
+        """Return Task2 co_treat/composite relations in original raw schema."""
+        raw: List[Dict] = []
+        task2 = task_results.get("task2_intervention_profiling", {}) or {}
+        raw.extend([t for t in (task2.get("co_treat_relations") or []) if isinstance(t, dict)])
+        raw.extend([t for t in (task2.get("composite_relations") or []) if isinstance(t, dict)])
+        return raw
     
     def _add_sponsor_triples(self, nct_id: str, trial_data: Any) -> List[KGTriple]:
         """Add sponsor and collaborator triples."""
@@ -913,22 +1138,6 @@ class Task8CTKGAssembly(BaseTaskHandler):
                 ))
         
         return triples
-    
-    # =========================================================================
-    # LEGACY METHODS (for backwards compatibility)
-    # =========================================================================
-    
-    def _build_trial_centric(
-        self, 
-        trial_data: Any, 
-        task_results: Dict
-    ) -> List[KGTriple]:
-        """
-        Build trial-centric CTKG triples (legacy method).
-        Use _build_trial_centric_structured for full output.
-        """
-        ctkg = self._build_trial_centric_structured(trial_data, task_results)
-        return ctkg.triples
     
     def _add_design_triples(self, nct_id: str, trial_data: Any) -> List[KGTriple]:
         """Add design-related triples."""
@@ -985,87 +1194,6 @@ class Task8CTKGAssembly(BaseTaskHandler):
                 head_type="Trial",
                 tail_type="Condition"
             ))
-        
-        return triples
-    
-    def _add_intervention_triples(
-        self, 
-        nct_id: str, 
-        trial_data: Any,
-        task_results: Dict
-    ) -> List[KGTriple]:
-        """Add intervention-related triples."""
-        triples = []
-        
-        # Use Task 2 results if available
-        task2 = task_results.get('task2_intervention_profiling', {})
-        profiled = task2.get('profiled_interventions', [])
-        
-        if profiled:
-            for arm in profiled:
-                for intervention in arm.get('interventions', []):
-                    intervention_name = intervention.get('name', '')
-                    if intervention_name:
-                        triples.append(KGTriple(
-                            head=nct_id,
-                            relation="hasIntervention",
-                            tail=intervention_name,
-                            head_type="Trial",
-                            tail_type="Intervention",
-                            attributes={
-                                'type': intervention.get('type'),
-                                'dosage': intervention.get('dosage'),
-                                'route': intervention.get('administration_route'),
-                                'frequency': intervention.get('frequency'),
-                                'duration': intervention.get('Treatment duration')
-                            }
-                        ))
-        else:
-            # Fall back to raw data
-            arms = getattr(trial_data, 'arms_interventions', {})
-            for intervention in arms.get('interventions', []):
-                triples.append(KGTriple(
-                    head=nct_id,
-                    relation="hasIntervention",
-                    tail=intervention.get('name', ''),
-                    head_type="Trial",
-                    tail_type="Intervention",
-                    attributes={'type': intervention.get('type')}
-                ))
-        
-        return triples
-    
-    def _add_outcome_triples(
-        self, 
-        nct_id: str, 
-        trial_data: Any,
-        task_results: Dict
-    ) -> List[KGTriple]:
-        """Add outcome-related triples."""
-        triples = []
-        
-        # Use Task 1 results if available
-        task1 = task_results.get('task1_outcome_standardization', {})
-        standardized = task1.get('standardized_outcomes', [])
-        
-        if standardized:
-            for outcome in standardized:
-                for normalized in outcome.get('standardized', []):
-                    core_measurement = normalized.get('core_measurement', '')
-                    if core_measurement:
-                        triples.append(KGTriple(
-                            head=nct_id,
-                            relation="hasOutcome",
-                            tail=core_measurement,
-                            head_type="Trial",
-                            tail_type="Outcome",
-                            attributes={
-                                'original_title': outcome.get('original_title'),
-                                'outcome_type': outcome.get('outcome_type'),
-                                'measurement_tool': normalized.get('measurement_tool'),
-                                'value_condition': normalized.get('value_condition')
-                            }
-                        ))
         
         return triples
     
@@ -1126,37 +1254,22 @@ class Task8CTKGAssembly(BaseTaskHandler):
         Creates:
         1. Trial-level AE triples with aggregated statistics
         2. Group-level AE triples for each group
-        3. AE -> OrganSystem hierarchy triples
         """
         triples = []
         
         ae_module = getattr(trial_data, 'adverse_events', {})
         
-        # Track organ systems for hierarchy triples (deduplicated)
-        organ_system_terms = {}  # {organ_system: set(terms)}
-        
         # Process serious adverse events
         serious_events = ae_module.get('seriousEvents', [])
         triples.extend(self._process_ae_events(
-            nct_id, serious_events, 'hasSeriousAdverseEvent', organ_system_terms
+            nct_id, serious_events, 'hasSeriousAdverseEvent'
         ))
         
         # Process other adverse events
         other_events = ae_module.get('otherEvents', [])
         triples.extend(self._process_ae_events(
-            nct_id, other_events, 'hasAdverseEvent', organ_system_terms
+            nct_id, other_events, 'hasAdverseEvent'
         ))
-        
-        # Add organ system hierarchy triples (AE -> OrganSystem)
-        for organ_system, terms in organ_system_terms.items():
-            for term in terms:
-                triples.append(KGTriple(
-                    head=term,
-                    relation="belongsToOrganSystem",
-                    tail=organ_system,
-                    head_type="AdverseEvent",
-                    tail_type="OrganSystem"
-                ))
         
         return triples
     
@@ -1164,8 +1277,7 @@ class Task8CTKGAssembly(BaseTaskHandler):
         self,
         nct_id: str,
         events: List[Dict],
-        relation: str,
-        organ_system_terms: Dict
+        relation: str
     ) -> List[KGTriple]:
         """
         Process adverse events and create triples.
@@ -1184,12 +1296,6 @@ class Task8CTKGAssembly(BaseTaskHandler):
             organ_system = event.get('organSystem', '')
             stats = event.get('stats', [])
             
-            # Track for hierarchy triple
-            if organ_system:
-                if organ_system not in organ_system_terms:
-                    organ_system_terms[organ_system] = set()
-                organ_system_terms[organ_system].add(term)
-            
             # Calculate trial-level statistics (sum across all groups)
             total_affected = 0
             total_at_risk = 0
@@ -1204,18 +1310,21 @@ class Task8CTKGAssembly(BaseTaskHandler):
             if total_affected > 0:
                 rate = round(total_affected / total_at_risk * 100, 2) if total_at_risk > 0 else 0
                 
+                trial_attrs = {
+                    'total_affected': total_affected,
+                    'total_at_risk': total_at_risk,
+                    'rate_percent': rate,
+                }
+                if organ_system:
+                    trial_attrs['organ_system'] = organ_system
+
                 triples.append(KGTriple(
                     head=nct_id,
                     relation=relation,
                     tail=term,
                     head_type="Trial",
-                    tail_type="AdverseEvent",
-                    attributes={
-                        'total_affected': total_affected,
-                        'total_at_risk': total_at_risk,
-                        'rate_percent': rate,
-                        'assessment_type': event.get('assessmentType')
-                    }
+                    tail_type="Disease",
+                    attributes=trial_attrs
                 ))
             
             # Create group-level triples (only for groups with affected > 0)
@@ -1228,39 +1337,48 @@ class Task8CTKGAssembly(BaseTaskHandler):
                 if num_affected == 0:
                     continue
                 
-                # Normalize group ID: EG000 -> Group_000
-                normalized_group = self._normalize_group_id(group_id)
+                # Normalize group ID: EG000 -> NCTID_000
+                normalized_group = self._normalize_group_id(group_id, nct_id=nct_id)
                 rate = round(num_affected / num_at_risk * 100, 2) if num_at_risk > 0 else 0
                 
+                group_attrs = {
+                    'num_affected': num_affected,
+                    'num_at_risk': num_at_risk,
+                    'rate_percent': rate,
+                }
+                if organ_system:
+                    group_attrs['organ_system'] = organ_system
+
                 triples.append(KGTriple(
                     head=normalized_group,
                     relation=relation,
                     tail=term,
                     head_type="Group",
-                    tail_type="AdverseEvent",
-                    attributes={
-                        'num_affected': num_affected,
-                        'num_at_risk': num_at_risk,
-                        'rate_percent': rate
-                    },
+                    tail_type="Disease",
+                    attributes=group_attrs,
                     provenance={'nct_id': nct_id}
                 ))
         
         return triples
     
-    def _normalize_group_id(self, group_id: str) -> str:
+    def _normalize_group_id(self, group_id: str, nct_id: Optional[str] = None) -> str:
         """
         Normalize group ID to unified format.
         
-        BG000, OG000, EG000, AG000 -> Group_000
+        BG000, OG000, EG000, AG000 -> <NCTID>_000 (when nct_id is provided)
         
         Args:
             group_id: Original group ID
+            nct_id: Trial NCT ID for normalized prefix
             
         Returns:
-            Normalized group ID in format Group_XXX
+            Normalized group ID in format <NCTID>_XXX (preferred)
         """
         if not group_id:
+            return group_id
+
+        # Keep already-normalized NCT group IDs unchanged.
+        if isinstance(group_id, str) and group_id.startswith("NCT") and "_" in group_id:
             return group_id
         
         # Extract the numeric part
@@ -1269,6 +1387,8 @@ class Task8CTKGAssembly(BaseTaskHandler):
         match = re.match(r'[A-Z]{1,2}(\d+)', group_id)
         if match:
             num = match.group(1)
+            if nct_id:
+                return f"{nct_id}_{num}"
             return f"Group_{num}"
         
         return group_id
@@ -1306,6 +1426,30 @@ class Task8CTKGAssembly(BaseTaskHandler):
                 return True
         
         return False
+
+    def _map_intervention_tail_type(self, intervention_type: Optional[str]) -> str:
+        """Map intervention type to specific biomedical entity type."""
+        if not intervention_type:
+            return "Intervention"
+
+        t = str(intervention_type).strip().lower()
+        mapping = {
+            'drug': 'Drug',
+            'biological': 'Biological',
+            'device': 'Device',
+            'procedure': 'Procedure',
+            'dietary supplement': 'DietarySupplement',
+            'dietary_supplement': 'DietarySupplement',
+            'behavioral': 'BehavioralIntervention',
+            'genetic': 'GeneticIntervention',
+            'radiation': 'RadiationTherapy',
+            'diagnostic test': 'DiagnosticTest',
+            'diagnostic_test': 'DiagnosticTest',
+            'combination product': 'CombinationProduct',
+            'combination_product': 'CombinationProduct',
+            'other': 'Intervention'
+        }
+        return mapping.get(t, "Intervention")
     
     # =========================================================================
     # INTERVENTION-CENTRIC CTKG
@@ -1386,17 +1530,50 @@ class Task8CTKGAssembly(BaseTaskHandler):
                 provenance={'nct_id': nct_id}
             ))
         
-        # Co-treatment relations
-        co_treat = task2.get('co_treat_relations', [])
-        for relation in co_treat:
+        # Co-treatment relations from Task2 (new schema)
+        co_treat = task2.get('co_treat_relations', []) or []
+        for rel in co_treat:
+            head = rel.get('head')
+            tail = rel.get('tail')
+            relation = rel.get('relation') or 'co_treat'
+            if not head or not tail:
+                continue
             triples.append(KGTriple(
-                head=relation.get('drug1', ''),
-                relation="coTreat",
-                tail=relation.get('drug2', ''),
-                head_type="Intervention",
-                tail_type="Intervention",
-                provenance={'nct_id': nct_id, 'arm_group': relation.get('arm_group')}
+                head=head,
+                relation=relation,
+                tail=tail,
+                head_type=rel.get('head_type', 'Drug'),
+                tail_type=rel.get('tail_type', 'Drug'),
+                attributes={
+                    'head_attributes': rel.get('head_attributes') or {},
+                    'tail_attributes': rel.get('tail_attributes') or {},
+                    'relation_attributes': rel.get('attributes') or {},
+                    'source_task': 'task2_intervention_profiling'
+                },
+                provenance={'nct_id': nct_id}
+            ))
+
+        # Composite relations from Task2 (belongs_to_group)
+        composite = task2.get('composite_relations', []) or []
+        for rel in composite:
+            head = rel.get('head')
+            tail = rel.get('tail')
+            relation = rel.get('relation') or 'belongs_to_group'
+            if not head or not tail:
+                continue
+            triples.append(KGTriple(
+                head=head,
+                relation=relation,
+                tail=tail,
+                head_type=rel.get('head_type', 'Drug'),
+                tail_type=rel.get('tail_type', 'Group'),
+                attributes={
+                    'head_attributes': rel.get('head_attributes') or {},
+                    'tail_attributes': rel.get('tail_attributes') or {},
+                    'relation_attributes': rel.get('attributes') or {},
+                    'source_task': 'task2_intervention_profiling'
+                },
+                provenance={'nct_id': nct_id}
             ))
         
         return triples
-

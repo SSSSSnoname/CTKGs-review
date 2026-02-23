@@ -19,6 +19,9 @@ from .ctkg_agent import (
     TaskResult,
     CTKGTriple,
     create_agent,
+    create_api_agent,
+    create_endpoint_agent,
+    create_local_agent,
     process_trial
 )
 
@@ -31,5 +34,8 @@ __all__ = [
     'TaskResult',
     'CTKGTriple',
     'create_agent',
+    'create_api_agent',
+    'create_endpoint_agent',
+    'create_local_agent',
     'process_trial',
 ]

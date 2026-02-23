@@ -1,0 +1,1916 @@
+{
+  "task_type": "task3_eligibility_structuring",
+  "success": true,
+  "data": {
+    "structured_eligibility": {
+      "entity_qualifiers": [
+        {
+          "section": "Inclusion",
+          "slot": "Medical conditions",
+          "original_text": "* Histologically or cytologically confirmed adenocarcinoma of the colon or rectum that is metastatic.",
+          "core_entity": "Colorectal adenocarcinoma",
+          "qualifiers": {
+            "polarity": "include",
+            "entity_type": "disease",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "that is metastatic",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Inclusion",
+          "slot": "Medications or therapy",
+          "original_text": "* Previous treatment with fluoropyrimidine-, oxaliplatin- and irinotecan- based chemotherapy, an anti-VEGF therapy (if no contraindication) and if KRAS wild type and no contraindication, an anti-EGFR therapy.",
+          "core_entity": "Fluoropyrimidine-based chemotherapy",
+          "qualifiers": {
+            "polarity": "required",
+            "entity_type": "therapy",
+            "status": "prior",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": {
+              "required": true,
+              "prohibited": false,
+              "line_or_regimen": "fluoropyrimidine-based chemotherapy"
+            },
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Inclusion",
+          "slot": "Medications or therapy",
+          "original_text": "* Previous treatment with fluoropyrimidine-, oxaliplatin- and irinotecan- based chemotherapy, an anti-VEGF therapy (if no contraindication) and if KRAS wild type and no contraindication, an anti-EGFR therapy.",
+          "core_entity": "Oxaliplatin",
+          "qualifiers": {
+            "polarity": "required",
+            "entity_type": "therapy",
+            "status": "prior",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": {
+              "required": true,
+              "prohibited": false,
+              "line_or_regimen": "oxaliplatin-based chemotherapy"
+            },
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Inclusion",
+          "slot": "Medications or therapy",
+          "original_text": "* Previous treatment with fluoropyrimidine-, oxaliplatin- and irinotecan- based chemotherapy, an anti-VEGF therapy (if no contraindication) and if KRAS wild type and no contraindication, an anti-EGFR therapy.",
+          "core_entity": "Irinotecan",
+          "qualifiers": {
+            "polarity": "required",
+            "entity_type": "therapy",
+            "status": "prior",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": {
+              "required": true,
+              "prohibited": false,
+              "line_or_regimen": "irinotecan-based chemotherapy"
+            },
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Inclusion",
+          "slot": "Medications or therapy",
+          "original_text": "* Previous treatment with fluoropyrimidine-, oxaliplatin- and irinotecan- based chemotherapy, an anti-VEGF therapy (if no contraindication) and if KRAS wild type and no contraindication, an anti-EGFR therapy.",
+          "core_entity": "Anti-vascular endothelial growth factor therapy",
+          "qualifiers": {
+            "polarity": "required",
+            "entity_type": "therapy",
+            "status": "prior",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": {
+              "required": true,
+              "prohibited": false,
+              "line_or_regimen": "anti-VEGF therapy"
+            },
+            "conditional_clause": "if no contraindication",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Inclusion",
+          "slot": "Medications or therapy",
+          "original_text": "* Previous treatment with fluoropyrimidine-, oxaliplatin- and irinotecan- based chemotherapy, an anti-VEGF therapy (if no contraindication) and if KRAS wild type and no contraindication, an anti-EGFR therapy.",
+          "core_entity": "Anti-epidermal growth factor receptor therapy",
+          "qualifiers": {
+            "polarity": "required",
+            "entity_type": "therapy",
+            "status": "prior",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": {
+              "required": true,
+              "prohibited": false,
+              "line_or_regimen": "anti-EGFR therapy"
+            },
+            "conditional_clause": "if KRAS wild type and no contraindication",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Inclusion",
+          "slot": "Other",
+          "original_text": "* Radiographically measurable or evaluable disease (per RECIST v1.1)",
+          "core_entity": "Measurable disease",
+          "qualifiers": {
+            "polarity": "required",
+            "entity_type": "other",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": "RECIST v1.1"
+          }
+        },
+        {
+          "section": "Inclusion",
+          "slot": "Other",
+          "original_text": "* Life expectancy of ≥ 12 weeks.",
+          "core_entity": "Life expectancy",
+          "qualifiers": {
+            "polarity": "required",
+            "entity_type": "other",
+            "status": "unknown",
+            "temporal": null,
+            "numeric_constraint": {
+              "operator": ">=",
+              "value": "12",
+              "unit": "weeks"
+            },
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Inclusion",
+          "slot": "Demographics",
+          "original_text": "unknown",
+          "core_entity": "Demographics",
+          "qualifiers": {
+            "polarity": "unknown",
+            "entity_type": "other",
+            "status": "unknown",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Inclusion",
+          "slot": "Medical conditions",
+          "original_text": "* Eastern Cooperative Oncology Group (ECOG) performance status of 0 to 2",
+          "core_entity": "Performance status",
+          "qualifiers": {
+            "polarity": "required",
+            "entity_type": "functional_status",
+            "status": "unknown",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": "ECOG 0-2",
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": "ECOG"
+          }
+        },
+        {
+          "section": "Inclusion",
+          "slot": "Other",
+          "original_text": "* Three or more weeks have elapsed from the completion of previous treatment regimen and subjects must have recovered or be at a new stable baseline from any related toxicities.",
+          "core_entity": "Prior systemic cancer therapy",
+          "qualifiers": {
+            "polarity": "required",
+            "entity_type": "other",
+            "status": "prior",
+            "temporal": {
+              "window_value": 3,
+              "window_unit": "weeks",
+              "window_direction": "since"
+            },
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": {
+              "required": true,
+              "prohibited": false,
+              "line_or_regimen": "previous treatment regimen"
+            },
+            "conditional_clause": "subjects must have recovered or be at a new stable baseline from any related toxicities",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Inclusion",
+          "slot": "Medications or therapy",
+          "original_text": "* Prior radiotherapy to disease sites is allowed with certain protocol-defined restrictions.",
+          "core_entity": "Radiotherapy",
+          "qualifiers": {
+            "polarity": "allowed",
+            "entity_type": "procedure",
+            "status": "prior",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": {
+              "required": false,
+              "prohibited": false,
+              "line_or_regimen": "prior radiotherapy to disease sites"
+            },
+            "conditional_clause": "with certain protocol-defined restrictions",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Inclusion",
+          "slot": "Pregnancy",
+          "original_text": "unknown",
+          "core_entity": "Pregnancy",
+          "qualifiers": {
+            "polarity": "unknown",
+            "entity_type": "other",
+            "status": "unknown",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Exclusion",
+          "slot": "Medications or therapy",
+          "original_text": "* Prior treatment with regorafenib.",
+          "core_entity": "Regorafenib",
+          "qualifiers": {
+            "polarity": "prohibited",
+            "entity_type": "therapy",
+            "status": "prior",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": {
+              "required": false,
+              "prohibited": true,
+              "line_or_regimen": "regorafenib"
+            },
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Exclusion",
+          "slot": "Medical conditions",
+          "original_text": "* Presence of active gastrointestinal disease or other condition that will interfere significantly with the absorption of drugs.",
+          "core_entity": "Gastrointestinal disease",
+          "qualifiers": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "or other condition that will interfere significantly with the absorption of drugs",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Exclusion",
+          "slot": "Medical conditions",
+          "original_text": "* Active peptic ulcer disease, inflammatory bowel disease (eg, ulcerative colitis, Crohn's disease), diverticulitis, or other gastrointestinal conditions with increased risk of perforation or gastrointestinal bleeding.",
+          "core_entity": "Peptic ulcer disease",
+          "qualifiers": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Exclusion",
+          "slot": "Medical conditions",
+          "original_text": "* Active peptic ulcer disease, inflammatory bowel disease (eg, ulcerative colitis, Crohn's disease), diverticulitis, or other gastrointestinal conditions with increased risk of perforation or gastrointestinal bleeding.",
+          "core_entity": "Inflammatory bowel disease",
+          "qualifiers": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "eg, ulcerative colitis, Crohn's disease",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Exclusion",
+          "slot": "Medical conditions",
+          "original_text": "* Active peptic ulcer disease, inflammatory bowel disease (eg, ulcerative colitis, Crohn's disease), diverticulitis, or other gastrointestinal conditions with increased risk of perforation or gastrointestinal bleeding.",
+          "core_entity": "Ulcerative colitis",
+          "qualifiers": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Exclusion",
+          "slot": "Medical conditions",
+          "original_text": "* Active peptic ulcer disease, inflammatory bowel disease (eg, ulcerative colitis, Crohn's disease), diverticulitis, or other gastrointestinal conditions with increased risk of perforation or gastrointestinal bleeding.",
+          "core_entity": "Crohn's disease",
+          "qualifiers": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Exclusion",
+          "slot": "Medical conditions",
+          "original_text": "* Active peptic ulcer disease, inflammatory bowel disease (eg, ulcerative colitis, Crohn's disease), diverticulitis, or other gastrointestinal conditions with increased risk of perforation or gastrointestinal bleeding.",
+          "core_entity": "Diverticulitis",
+          "qualifiers": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "or other gastrointestinal conditions with increased risk of perforation or gastrointestinal bleeding",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Exclusion",
+          "slot": "Medical conditions",
+          "original_text": "* Recent history (≤ 3 months) or ongoing partial or complete bowel obstruction unless due to disease under study and corrected with surgery.",
+          "core_entity": "Bowel obstruction",
+          "qualifiers": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "recent",
+            "temporal": {
+              "window_value": 3,
+              "window_unit": "months",
+              "window_direction": "within_last"
+            },
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "unless due to disease under study and corrected with surgery",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Exclusion",
+          "slot": "Laboratory values",
+          "original_text": "* Blood pressure ≥ 140/90 mmHg.",
+          "core_entity": "Blood pressure",
+          "qualifiers": {
+            "polarity": "exclude",
+            "entity_type": "vital_sign",
+            "status": "uncontrolled",
+            "temporal": null,
+            "numeric_constraint": {
+              "operator": ">=",
+              "value": "140/90",
+              "unit": "mmHg"
+            },
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Exclusion",
+          "slot": "Medical conditions",
+          "original_text": "* Active bleeding diathesis or history of any major bleeding (eg, requiring transfusion of red blood cells (RBCs), central nervous system (CNS) bleeding, or significant hemoptysis within 6 months of enrollment. Subjects with bleeding secondary to underlying disease (including gastrointestinal (GI) perforation or fistula) that has been corrected by surgery or alternative procedure may be included.",
+          "core_entity": "Bleeding diathesis",
+          "qualifiers": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Exclusion",
+          "slot": "Medical conditions",
+          "original_text": "* Active bleeding diathesis or history of any major bleeding (eg, requiring transfusion of red blood cells (RBCs), central nervous system (CNS) bleeding, or significant hemoptysis within 6 months of enrollment. Subjects with bleeding secondary to underlying disease (including gastrointestinal (GI) perforation or fistula) that has been corrected by surgery or alternative procedure may be included.",
+          "core_entity": "Major bleeding history",
+          "qualifiers": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "recent",
+            "temporal": {
+              "window_value": 6,
+              "window_unit": "months",
+              "window_direction": "within_last"
+            },
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "eg, requiring transfusion of red blood cells, central nervous system bleeding, or significant hemoptysis; subjects with bleeding secondary to underlying disease that has been corrected by surgery or alternative procedure may be included",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Exclusion",
+          "slot": "Medical conditions",
+          "original_text": "* Clinically significant cardiac disease including unstable angina, acute myocardial infarction within 6 months from Day 1 of study drug administration, New York Heart Association Class II, III, or IV congestive heart failure, and arrhythmia requiring therapy.",
+          "core_entity": "Clinically significant cardiac disease",
+          "qualifiers": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "unstable",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "including unstable angina, acute myocardial infarction within 6 months from Day 1 of study drug administration, New York Heart Association Class II-IV congestive heart failure, and arrhythmia requiring therapy",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Exclusion",
+          "slot": "Medical conditions",
+          "original_text": "* Clinically significant cardiac disease including unstable angina, acute myocardial infarction within 6 months from Day 1 of study drug administration, New York Heart Association Class II, III, or IV congestive heart failure, and arrhythmia requiring therapy.",
+          "core_entity": "Unstable angina",
+          "qualifiers": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "unstable",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Exclusion",
+          "slot": "Medical conditions",
+          "original_text": "* Clinically significant cardiac disease including unstable angina, acute myocardial infarction within 6 months from Day 1 of study drug administration, New York Heart Association Class II, III, or IV congestive heart failure, and arrhythmia requiring therapy.",
+          "core_entity": "Acute myocardial infarction",
+          "qualifiers": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "recent",
+            "temporal": {
+              "window_value": 6,
+              "window_unit": "months",
+              "window_direction": "within_last"
+            },
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "within 6 months from Day 1 of study drug administration",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "section": "Exclusion",
+          "slot": "Medical conditions",
+          "original_text": "* Clinically significant cardiac disease including unstable angina, acute myocardial infarction within 6 months from Day 1 of study drug administration, New York Heart Association Class II, III, or IV congestive heart failure, and arrhythmia requiring therapy.",
+          "core_entity": "Congestive heart failure",
+          "qualifiers": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "unstable",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": "NYHA Class II-IV",
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": "NYHA"
+          }
+        },
+        {
+          "section": "Exclusion",
+          "slot": "Medical conditions",
+          "original_text": "* Clinically significant cardiac disease including unstable angina, acute myocardial infarction within 6 months from Day 1 of study drug administration, New York Heart Association Class II, III, or IV congestive heart failure, and arrhythmia requiring therapy.",
+          "core_entity": "Arrhythmia",
+          "qualifiers": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "unstable",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "requiring therapy",
+            "evidence_or_rule_source": null
+          }
+        }
+      ],
+      "metadata": {
+        "healthy_volunteers": false,
+        "sex": "ALL",
+        "minimum_age": "18 Years",
+        "maximum_age": null,
+        "std_ages": [
+          "ADULT",
+          "OLDER_ADULT"
+        ]
+      },
+      "baseline_characteristics": [
+        {
+          "title": "Age, Continuous",
+          "param_type": "MEAN",
+          "unit": "years",
+          "categories": [
+            {
+              "title": null,
+              "values": [
+                {
+                  "measurements": [
+                    {
+                      "groupId": "BG000",
+                      "value": "60.8",
+                      "lowerLimit": "34.0",
+                      "upperLimit": "84.0"
+                    },
+                    {
+                      "groupId": "BG001",
+                      "value": "59.5",
+                      "lowerLimit": "36.0",
+                      "upperLimit": "81.0"
+                    },
+                    {
+                      "groupId": "BG002",
+                      "value": "59.0",
+                      "lowerLimit": "37.0",
+                      "upperLimit": "79.0"
+                    },
+                    {
+                      "groupId": "BG003",
+                      "value": "59.2",
+                      "lowerLimit": "19.0",
+                      "upperLimit": "83.0"
+                    },
+                    {
+                      "groupId": "BG004",
+                      "value": "59.6",
+                      "lowerLimit": "19",
+                      "upperLimit": "84"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Sex: Female, Male",
+          "param_type": "COUNT_OF_PARTICIPANTS",
+          "unit": "Participants",
+          "categories": [
+            {
+              "title": null,
+              "values": [
+                {
+                  "title": "Female",
+                  "measurements": [
+                    {
+                      "groupId": "BG000",
+                      "value": "34"
+                    },
+                    {
+                      "groupId": "BG001",
+                      "value": "32"
+                    },
+                    {
+                      "groupId": "BG002",
+                      "value": "48"
+                    },
+                    {
+                      "groupId": "BG003",
+                      "value": "54"
+                    },
+                    {
+                      "groupId": "BG004",
+                      "value": "168"
+                    }
+                  ]
+                },
+                {
+                  "title": "Male",
+                  "measurements": [
+                    {
+                      "groupId": "BG000",
+                      "value": "53"
+                    },
+                    {
+                      "groupId": "BG001",
+                      "value": "56"
+                    },
+                    {
+                      "groupId": "BG002",
+                      "value": "62"
+                    },
+                    {
+                      "groupId": "BG003",
+                      "value": "57"
+                    },
+                    {
+                      "groupId": "BG004",
+                      "value": "228"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Race (NIH/OMB)",
+          "param_type": "COUNT_OF_PARTICIPANTS",
+          "unit": "Participants",
+          "categories": [
+            {
+              "title": null,
+              "values": [
+                {
+                  "title": "American Indian or Alaska Native",
+                  "measurements": [
+                    {
+                      "groupId": "BG000",
+                      "value": "0"
+                    },
+                    {
+                      "groupId": "BG001",
+                      "value": "0"
+                    },
+                    {
+                      "groupId": "BG002",
+                      "value": "0"
+                    },
+                    {
+                      "groupId": "BG003",
+                      "value": "0"
+                    },
+                    {
+                      "groupId": "BG004",
+                      "value": "0"
+                    }
+                  ]
+                },
+                {
+                  "title": "Asian",
+                  "measurements": [
+                    {
+                      "groupId": "BG000",
+                      "value": "0"
+                    },
+                    {
+                      "groupId": "BG001",
+                      "value": "2"
+                    },
+                    {
+                      "groupId": "BG002",
+                      "value": "10"
+                    },
+                    {
+                      "groupId": "BG003",
+                      "value": "9"
+                    },
+                    {
+                      "groupId": "BG004",
+                      "value": "21"
+                    }
+                  ]
+                },
+                {
+                  "title": "Native Hawaiian or Other Pacific Islander",
+                  "measurements": [
+                    {
+                      "groupId": "BG000",
+                      "value": "0"
+                    },
+                    {
+                      "groupId": "BG001",
+                      "value": "0"
+                    },
+                    {
+                      "groupId": "BG002",
+                      "value": "1"
+                    },
+                    {
+                      "groupId": "BG003",
+                      "value": "0"
+                    },
+                    {
+                      "groupId": "BG004",
+                      "value": "1"
+                    }
+                  ]
+                },
+                {
+                  "title": "Black or African American",
+                  "measurements": [
+                    {
+                      "groupId": "BG000",
+                      "value": "7"
+                    },
+                    {
+                      "groupId": "BG001",
+                      "value": "7"
+                    },
+                    {
+                      "groupId": "BG002",
+                      "value": "6"
+                    },
+                    {
+                      "groupId": "BG003",
+                      "value": "7"
+                    },
+                    {
+                      "groupId": "BG004",
+                      "value": "27"
+                    }
+                  ]
+                },
+                {
+                  "title": "White",
+                  "measurements": [
+                    {
+                      "groupId": "BG000",
+                      "value": "70"
+                    },
+                    {
+                      "groupId": "BG001",
+                      "value": "70"
+                    },
+                    {
+                      "groupId": "BG002",
+                      "value": "84"
+                    },
+                    {
+                      "groupId": "BG003",
+                      "value": "80"
+                    },
+                    {
+                      "groupId": "BG004",
+                      "value": "304"
+                    }
+                  ]
+                },
+                {
+                  "title": "More than one race",
+                  "measurements": [
+                    {
+                      "groupId": "BG000",
+                      "value": "10"
+                    },
+                    {
+                      "groupId": "BG001",
+                      "value": "9"
+                    },
+                    {
+                      "groupId": "BG002",
+                      "value": "5"
+                    },
+                    {
+                      "groupId": "BG003",
+                      "value": "11"
+                    },
+                    {
+                      "groupId": "BG004",
+                      "value": "35"
+                    }
+                  ]
+                },
+                {
+                  "title": "Unknown or Not Reported",
+                  "measurements": [
+                    {
+                      "groupId": "BG000",
+                      "value": "0"
+                    },
+                    {
+                      "groupId": "BG001",
+                      "value": "0"
+                    },
+                    {
+                      "groupId": "BG002",
+                      "value": "4"
+                    },
+                    {
+                      "groupId": "BG003",
+                      "value": "4"
+                    },
+                    {
+                      "groupId": "BG004",
+                      "value": "8"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "kg_triples": [
+        {
+          "head": "NCT02119676",
+          "relation": "includes_condition",
+          "tail": "Colorectal adenocarcinoma",
+          "head_type": "Trial",
+          "tail_type": "Disease",
+          "tail_attributes": {
+            "polarity": "include",
+            "entity_type": "disease",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "that is metastatic",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "includes_medication",
+          "tail": "Fluoropyrimidine-based chemotherapy",
+          "head_type": "Trial",
+          "tail_type": "Drug",
+          "tail_attributes": {
+            "polarity": "required",
+            "entity_type": "therapy",
+            "status": "prior",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": {
+              "required": true,
+              "prohibited": false,
+              "line_or_regimen": "fluoropyrimidine-based chemotherapy"
+            },
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "includes_medication",
+          "tail": "Oxaliplatin",
+          "head_type": "Trial",
+          "tail_type": "Drug",
+          "tail_attributes": {
+            "polarity": "required",
+            "entity_type": "therapy",
+            "status": "prior",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": {
+              "required": true,
+              "prohibited": false,
+              "line_or_regimen": "oxaliplatin-based chemotherapy"
+            },
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "includes_medication",
+          "tail": "Irinotecan",
+          "head_type": "Trial",
+          "tail_type": "Drug",
+          "tail_attributes": {
+            "polarity": "required",
+            "entity_type": "therapy",
+            "status": "prior",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": {
+              "required": true,
+              "prohibited": false,
+              "line_or_regimen": "irinotecan-based chemotherapy"
+            },
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "includes_medication",
+          "tail": "Anti-vascular endothelial growth factor therapy",
+          "head_type": "Trial",
+          "tail_type": "Drug",
+          "tail_attributes": {
+            "polarity": "required",
+            "entity_type": "therapy",
+            "status": "prior",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": {
+              "required": true,
+              "prohibited": false,
+              "line_or_regimen": "anti-VEGF therapy"
+            },
+            "conditional_clause": "if no contraindication",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "includes_medication",
+          "tail": "Anti-epidermal growth factor receptor therapy",
+          "head_type": "Trial",
+          "tail_type": "Drug",
+          "tail_attributes": {
+            "polarity": "required",
+            "entity_type": "therapy",
+            "status": "prior",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": {
+              "required": true,
+              "prohibited": false,
+              "line_or_regimen": "anti-EGFR therapy"
+            },
+            "conditional_clause": "if KRAS wild type and no contraindication",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "includes_criterion",
+          "tail": "Measurable disease",
+          "head_type": "Trial",
+          "tail_type": "EligibilityCriterion",
+          "tail_attributes": {
+            "polarity": "required",
+            "entity_type": "other",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": "RECIST v1.1"
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "includes_criterion",
+          "tail": "Life expectancy",
+          "head_type": "Trial",
+          "tail_type": "EligibilityCriterion",
+          "tail_attributes": {
+            "polarity": "required",
+            "entity_type": "other",
+            "status": "unknown",
+            "temporal": null,
+            "numeric_constraint": {
+              "operator": ">=",
+              "value": "12",
+              "unit": "weeks"
+            },
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "includes_demographic",
+          "tail": "Demographics",
+          "head_type": "Trial",
+          "tail_type": "DemographicCriterion",
+          "tail_attributes": {
+            "polarity": "unknown",
+            "entity_type": "other",
+            "status": "unknown",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "includes_condition",
+          "tail": "Performance status",
+          "head_type": "Trial",
+          "tail_type": "Disease",
+          "tail_attributes": {
+            "polarity": "required",
+            "entity_type": "functional_status",
+            "status": "unknown",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": "ECOG 0-2",
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": "ECOG"
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "includes_criterion",
+          "tail": "Prior systemic cancer therapy",
+          "head_type": "Trial",
+          "tail_type": "EligibilityCriterion",
+          "tail_attributes": {
+            "polarity": "required",
+            "entity_type": "other",
+            "status": "prior",
+            "temporal": {
+              "window_value": 3,
+              "window_unit": "weeks",
+              "window_direction": "since"
+            },
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": {
+              "required": true,
+              "prohibited": false,
+              "line_or_regimen": "previous treatment regimen"
+            },
+            "conditional_clause": "subjects must have recovered or be at a new stable baseline from any related toxicities",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "includes_medication",
+          "tail": "Radiotherapy",
+          "head_type": "Trial",
+          "tail_type": "Drug",
+          "tail_attributes": {
+            "polarity": "allowed",
+            "entity_type": "procedure",
+            "status": "prior",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": {
+              "required": false,
+              "prohibited": false,
+              "line_or_regimen": "prior radiotherapy to disease sites"
+            },
+            "conditional_clause": "with certain protocol-defined restrictions",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "includes_pregnancy",
+          "tail": "Pregnancy",
+          "head_type": "Trial",
+          "tail_type": "PregnancyStatus",
+          "tail_attributes": {
+            "polarity": "unknown",
+            "entity_type": "other",
+            "status": "unknown",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "excludes_medication",
+          "tail": "Regorafenib",
+          "head_type": "Trial",
+          "tail_type": "Drug",
+          "tail_attributes": {
+            "polarity": "prohibited",
+            "entity_type": "therapy",
+            "status": "prior",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": {
+              "required": false,
+              "prohibited": true,
+              "line_or_regimen": "regorafenib"
+            },
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "excludes_condition",
+          "tail": "Gastrointestinal disease",
+          "head_type": "Trial",
+          "tail_type": "Disease",
+          "tail_attributes": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "or other condition that will interfere significantly with the absorption of drugs",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "excludes_condition",
+          "tail": "Peptic ulcer disease",
+          "head_type": "Trial",
+          "tail_type": "Disease",
+          "tail_attributes": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "excludes_condition",
+          "tail": "Inflammatory bowel disease",
+          "head_type": "Trial",
+          "tail_type": "Disease",
+          "tail_attributes": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "eg, ulcerative colitis, Crohn's disease",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "excludes_condition",
+          "tail": "Ulcerative colitis",
+          "head_type": "Trial",
+          "tail_type": "Disease",
+          "tail_attributes": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "excludes_condition",
+          "tail": "Crohn's disease",
+          "head_type": "Trial",
+          "tail_type": "Disease",
+          "tail_attributes": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "excludes_condition",
+          "tail": "Diverticulitis",
+          "head_type": "Trial",
+          "tail_type": "Disease",
+          "tail_attributes": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "or other gastrointestinal conditions with increased risk of perforation or gastrointestinal bleeding",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "excludes_condition",
+          "tail": "Bowel obstruction",
+          "head_type": "Trial",
+          "tail_type": "Disease",
+          "tail_attributes": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "recent",
+            "temporal": {
+              "window_value": 3,
+              "window_unit": "months",
+              "window_direction": "within_last"
+            },
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "unless due to disease under study and corrected with surgery",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "excludes_lab_value",
+          "tail": "Blood pressure",
+          "head_type": "Trial",
+          "tail_type": "LabCriterion",
+          "tail_attributes": {
+            "polarity": "exclude",
+            "entity_type": "vital_sign",
+            "status": "uncontrolled",
+            "temporal": null,
+            "numeric_constraint": {
+              "operator": ">=",
+              "value": "140/90",
+              "unit": "mmHg"
+            },
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "excludes_condition",
+          "tail": "Bleeding diathesis",
+          "head_type": "Trial",
+          "tail_type": "Disease",
+          "tail_attributes": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "active",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "excludes_condition",
+          "tail": "Major bleeding history",
+          "head_type": "Trial",
+          "tail_type": "Disease",
+          "tail_attributes": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "recent",
+            "temporal": {
+              "window_value": 6,
+              "window_unit": "months",
+              "window_direction": "within_last"
+            },
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "eg, requiring transfusion of red blood cells, central nervous system bleeding, or significant hemoptysis; subjects with bleeding secondary to underlying disease that has been corrected by surgery or alternative procedure may be included",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "excludes_condition",
+          "tail": "Clinically significant cardiac disease",
+          "head_type": "Trial",
+          "tail_type": "Disease",
+          "tail_attributes": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "unstable",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "including unstable angina, acute myocardial infarction within 6 months from Day 1 of study drug administration, New York Heart Association Class II-IV congestive heart failure, and arrhythmia requiring therapy",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "excludes_condition",
+          "tail": "Unstable angina",
+          "head_type": "Trial",
+          "tail_type": "Disease",
+          "tail_attributes": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "unstable",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "excludes_condition",
+          "tail": "Acute myocardial infarction",
+          "head_type": "Trial",
+          "tail_type": "Disease",
+          "tail_attributes": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "recent",
+            "temporal": {
+              "window_value": 6,
+              "window_unit": "months",
+              "window_direction": "within_last"
+            },
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "within 6 months from Day 1 of study drug administration",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "excludes_condition",
+          "tail": "Congestive heart failure",
+          "head_type": "Trial",
+          "tail_type": "Disease",
+          "tail_attributes": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "unstable",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": "NYHA Class II-IV",
+            "prior_treatment": null,
+            "conditional_clause": null,
+            "evidence_or_rule_source": "NYHA"
+          }
+        },
+        {
+          "head": "NCT02119676",
+          "relation": "excludes_condition",
+          "tail": "Arrhythmia",
+          "head_type": "Trial",
+          "tail_type": "Disease",
+          "tail_attributes": {
+            "polarity": "exclude",
+            "entity_type": "disease",
+            "status": "unstable",
+            "temporal": null,
+            "numeric_constraint": null,
+            "severity_grade": null,
+            "prior_treatment": null,
+            "conditional_clause": "requiring therapy",
+            "evidence_or_rule_source": null
+          }
+        },
+        {
+          "head": "NCT02119676_000",
+          "relation": "baseline_characteristics_Age_Continuous",
+          "tail": "60.8",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "years",
+            "param_type": "MEAN",
+            "title": "Age, Continuous"
+          }
+        },
+        {
+          "head": "NCT02119676_001",
+          "relation": "baseline_characteristics_Age_Continuous",
+          "tail": "59.5",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "years",
+            "param_type": "MEAN",
+            "title": "Age, Continuous"
+          }
+        },
+        {
+          "head": "NCT02119676_002",
+          "relation": "baseline_characteristics_Age_Continuous",
+          "tail": "59.0",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "years",
+            "param_type": "MEAN",
+            "title": "Age, Continuous"
+          }
+        },
+        {
+          "head": "NCT02119676_003",
+          "relation": "baseline_characteristics_Age_Continuous",
+          "tail": "59.2",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "years",
+            "param_type": "MEAN",
+            "title": "Age, Continuous"
+          }
+        },
+        {
+          "head": "NCT02119676_004",
+          "relation": "baseline_characteristics_Age_Continuous",
+          "tail": "59.6",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "years",
+            "param_type": "MEAN",
+            "title": "Age, Continuous"
+          }
+        },
+        {
+          "head": "NCT02119676_000",
+          "relation": "baseline_characteristics_Female",
+          "tail": "34",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Female"
+          }
+        },
+        {
+          "head": "NCT02119676_001",
+          "relation": "baseline_characteristics_Female",
+          "tail": "32",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Female"
+          }
+        },
+        {
+          "head": "NCT02119676_002",
+          "relation": "baseline_characteristics_Female",
+          "tail": "48",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Female"
+          }
+        },
+        {
+          "head": "NCT02119676_003",
+          "relation": "baseline_characteristics_Female",
+          "tail": "54",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Female"
+          }
+        },
+        {
+          "head": "NCT02119676_004",
+          "relation": "baseline_characteristics_Female",
+          "tail": "168",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Female"
+          }
+        },
+        {
+          "head": "NCT02119676_000",
+          "relation": "baseline_characteristics_Male",
+          "tail": "53",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Male"
+          }
+        },
+        {
+          "head": "NCT02119676_001",
+          "relation": "baseline_characteristics_Male",
+          "tail": "56",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Male"
+          }
+        },
+        {
+          "head": "NCT02119676_002",
+          "relation": "baseline_characteristics_Male",
+          "tail": "62",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Male"
+          }
+        },
+        {
+          "head": "NCT02119676_003",
+          "relation": "baseline_characteristics_Male",
+          "tail": "57",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Male"
+          }
+        },
+        {
+          "head": "NCT02119676_004",
+          "relation": "baseline_characteristics_Male",
+          "tail": "228",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Male"
+          }
+        },
+        {
+          "head": "NCT02119676_001",
+          "relation": "baseline_characteristics_Asian",
+          "tail": "2",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Asian"
+          }
+        },
+        {
+          "head": "NCT02119676_002",
+          "relation": "baseline_characteristics_Asian",
+          "tail": "10",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Asian"
+          }
+        },
+        {
+          "head": "NCT02119676_003",
+          "relation": "baseline_characteristics_Asian",
+          "tail": "9",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Asian"
+          }
+        },
+        {
+          "head": "NCT02119676_004",
+          "relation": "baseline_characteristics_Asian",
+          "tail": "21",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Asian"
+          }
+        },
+        {
+          "head": "NCT02119676_002",
+          "relation": "baseline_characteristics_Native_Hawaiian_or_Other_Pacific_Islander",
+          "tail": "1",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Native Hawaiian or Other Pacific Islander"
+          }
+        },
+        {
+          "head": "NCT02119676_004",
+          "relation": "baseline_characteristics_Native_Hawaiian_or_Other_Pacific_Islander",
+          "tail": "1",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Native Hawaiian or Other Pacific Islander"
+          }
+        },
+        {
+          "head": "NCT02119676_000",
+          "relation": "baseline_characteristics_Black_or_African_American",
+          "tail": "7",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Black or African American"
+          }
+        },
+        {
+          "head": "NCT02119676_001",
+          "relation": "baseline_characteristics_Black_or_African_American",
+          "tail": "7",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Black or African American"
+          }
+        },
+        {
+          "head": "NCT02119676_002",
+          "relation": "baseline_characteristics_Black_or_African_American",
+          "tail": "6",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Black or African American"
+          }
+        },
+        {
+          "head": "NCT02119676_003",
+          "relation": "baseline_characteristics_Black_or_African_American",
+          "tail": "7",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Black or African American"
+          }
+        },
+        {
+          "head": "NCT02119676_004",
+          "relation": "baseline_characteristics_Black_or_African_American",
+          "tail": "27",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Black or African American"
+          }
+        },
+        {
+          "head": "NCT02119676_000",
+          "relation": "baseline_characteristics_White",
+          "tail": "70",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "White"
+          }
+        },
+        {
+          "head": "NCT02119676_001",
+          "relation": "baseline_characteristics_White",
+          "tail": "70",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "White"
+          }
+        },
+        {
+          "head": "NCT02119676_002",
+          "relation": "baseline_characteristics_White",
+          "tail": "84",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "White"
+          }
+        },
+        {
+          "head": "NCT02119676_003",
+          "relation": "baseline_characteristics_White",
+          "tail": "80",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "White"
+          }
+        },
+        {
+          "head": "NCT02119676_004",
+          "relation": "baseline_characteristics_White",
+          "tail": "304",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "White"
+          }
+        },
+        {
+          "head": "NCT02119676_000",
+          "relation": "baseline_characteristics_More_than_one_race",
+          "tail": "10",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "More than one race"
+          }
+        },
+        {
+          "head": "NCT02119676_001",
+          "relation": "baseline_characteristics_More_than_one_race",
+          "tail": "9",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "More than one race"
+          }
+        },
+        {
+          "head": "NCT02119676_002",
+          "relation": "baseline_characteristics_More_than_one_race",
+          "tail": "5",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "More than one race"
+          }
+        },
+        {
+          "head": "NCT02119676_003",
+          "relation": "baseline_characteristics_More_than_one_race",
+          "tail": "11",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "More than one race"
+          }
+        },
+        {
+          "head": "NCT02119676_004",
+          "relation": "baseline_characteristics_More_than_one_race",
+          "tail": "35",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "More than one race"
+          }
+        },
+        {
+          "head": "NCT02119676_002",
+          "relation": "baseline_characteristics_Unknown_or_Not_Reported",
+          "tail": "4",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Unknown or Not Reported"
+          }
+        },
+        {
+          "head": "NCT02119676_003",
+          "relation": "baseline_characteristics_Unknown_or_Not_Reported",
+          "tail": "4",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Unknown or Not Reported"
+          }
+        },
+        {
+          "head": "NCT02119676_004",
+          "relation": "baseline_characteristics_Unknown_or_Not_Reported",
+          "tail": "8",
+          "head_type": "TrialGroup",
+          "tail_type": "Value",
+          "tail_attributes": {
+            "unit": "Participants",
+            "param_type": "COUNT_OF_PARTICIPANTS",
+            "title": "Unknown or Not Reported"
+          }
+        }
+      ]
+    }
+  },
+  "errors": [],
+  "metadata": {}
+}
